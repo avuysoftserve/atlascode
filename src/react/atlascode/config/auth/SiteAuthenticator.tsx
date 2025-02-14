@@ -7,8 +7,6 @@ import DomainIcon from '@material-ui/icons/Domain';
 import { Product, ProductJira } from '../../../../atlclients/authInfo';
 import { SiteList } from './SiteList';
 import { SiteWithAuthInfo } from '../../../../lib/ipc/toUI/config';
-import { Features } from 'src/util/featureFlags';
-import { CommonMessageType } from 'src/lib/ipc/toUI/common';
 
 type SiteAuthenticatorProps = {
     product: Product;
