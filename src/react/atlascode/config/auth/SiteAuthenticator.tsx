@@ -30,25 +30,10 @@ export const SiteAuthenticator: React.FunctionComponent<SiteAuthenticatorProps> 
             [authDialogController, product],
         );
 
-        const [useNewAuth, setUseNewAuth] = React.useState(false); // bwieger
-        React.useEffect(() => {
-            window.addEventListener('message', (event) => {
-                const message = event.data;
-                if (message.command === CommonMessageType.UpdateFeatureFlags) {
-                    // bwieger
-                    const featureValue = message.featureFlags[Features.EnableRemoteAuthentication];
-                    console.log(
-                        `FeatureGates: received by SiteAuthenticator - ${Features.EnableRemoteAuthentication} -> ${featureValue}`,
-                    );
-                    setUseNewAuth(featureValue);
-                }
-            });
-        }, []);
-
         return (
             <Box flexGrow={1}>
                 <Grid container direction="column" spacing={2}>
-                    {useNewAuth && product.key === ProductJira.key ? ( // bwieger
+                    {product.key === ProductJira.key ? (
                         <AuthContainer
                             isRemote={isRemote}
                             product={product}
