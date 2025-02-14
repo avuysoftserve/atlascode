@@ -18,6 +18,7 @@
         "noImplicitThis": true,
         "noImplicitAny": true,
         "strictNullChecks": true,
+        "suppressImplicitAnyIndexErrors": true,
         "ignoreDeprecations": "5.0",
         "noUnusedLocals": true,
         "typeRoots": ["node_modules/@types", "src/typings/"]
