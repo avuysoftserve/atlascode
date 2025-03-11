@@ -1,9 +1,12 @@
 import React, { useCallback } from 'react';
+// import { createRequire } from 'module';
+// const req = createRequire(import.meta.url);
+// const { VSCodeRadio, VSCodeButton } = require('@vscode/webview-ui-toolkit/react');
 import { Container, Typography, Box, Card, CardActionArea, CardContent } from '@material-ui/core';
-import { Product } from './types';
+import { Product } from '../types';
 import { VSCodeRadio, VSCodeButton } from '@vscode/webview-ui-toolkit/react';
-import { BitbucketOnboardingLogo } from '../icons/BitbucketOnboardingLogo';
-import { JiraOnboardingLogo } from '../icons/JiraOnboardingLogo';
+import { BitbucketOnboardingLogo } from '../../icons/BitbucketOnboardingLogo';
+import { JiraOnboardingLogo } from '../../icons/JiraOnboardingLogo';
 
 type Props = {
     product: Product;

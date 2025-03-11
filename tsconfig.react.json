@@ -21,8 +21,9 @@
         "ignoreDeprecations": "5.0",
         "noUnusedLocals": true,
         "typeRoots": ["node_modules/@types", "src/typings/"],
+        "esModuleInterop": true
     },
-    "include": ["**/src/**/*", "**/test/**/*", "webpack.*.js", "jest.config.js", "jest.unit.config.js", "jest.react.config.js", "**/stories/**/*", "e2e/**/*"],
+    "include": ["**/src/**/*", "**/test/**/*", "webpack.*.js", "jest.config.js", "jest.react.config.js", "**/stories/**/*", "e2e/**/*"],
     "exclude": [
         "out",
         "node_modules",

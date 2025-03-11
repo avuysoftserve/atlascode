@@ -1,5 +1,5 @@
 import React from 'react';
-import { JiraBitbucketOnboarding } from '../common/JiraBitbucketOnboarding';
+import { JiraBitbucketOnboarding } from '../common/onboarding/JiraBitbucketOnboarding';
 import { Product } from '../common/types';
 
 type Props = {
