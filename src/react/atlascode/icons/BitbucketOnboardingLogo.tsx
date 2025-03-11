@@ -10,7 +10,7 @@ export const BitbucketOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = 
             xmlns="http://www.w3.org/2000/svg"
             xmlnsXlink="http://www.w3.org/1999/xlink"
         >
-            <g clip-path="url(#clip0_404_18746)">
+            <g clipPath="url(#clip0_404_18746)">
                 <path
                     d="M40.4828 27.5142L38.4599 39.8711C38.328 40.6187 37.8003 41.0584 37.0527 41.0584H19.9025C19.155 41.0584 18.6273 40.6187 18.4953 39.8711L14.9334 17.8397C14.8015 17.0921 15.1972 16.6084 15.9008 16.6084H41.0544C41.758 16.6084 42.1538 17.0921 42.0219 17.8397L41.0544 23.6444C40.9225 24.4799 40.4388 24.8317 39.6472 24.8317H24.5199C24.3 24.8317 24.1681 24.9636 24.2121 25.2275L25.3994 32.5273C25.4434 32.7032 25.5753 32.8351 25.7512 32.8351H31.2041C31.38 32.8351 31.5119 32.7032 31.5559 32.5273L32.3914 27.2503C32.4793 26.5907 32.9191 26.3268 33.5347 26.3268H39.4713C40.3508 26.3268 40.6147 26.7666 40.4828 27.5142Z"
                     fill="#357DE8"
@@ -21,13 +21,13 @@ export const BitbucketOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = 
                     d="M50.0742 21.5C50.0742 21.3619 50.1861 21.25 50.3242 21.25H73.0079C73.0621 21.25 73.1148 21.2676 73.1582 21.3002L75.8179 23.3002C75.9509 23.4002 75.9509 23.5998 75.8179 23.6998L73.1582 25.6998C73.1148 25.7324 73.0621 25.75 73.0079 25.75H50.3242C50.1861 25.75 50.0742 25.6381 50.0742 25.5V21.5Z"
                     fill="url(#paint0_linear_404_18746)"
                     stroke="url(#paint1_linear_404_18746)"
-                    stroke-width="0.5"
+                    strokeWidth="0.5"
                 />
                 <path
                     d="M82.9258 30.5C82.9258 30.3619 82.8139 30.25 82.6758 30.25H59.9921C59.9379 30.25 59.8852 30.2676 59.8418 30.3002L57.1821 32.3002C57.0491 32.4002 57.0491 32.5998 57.1821 32.6998L59.8418 34.6998C59.8852 34.7324 59.9379 34.75 59.9921 34.75H82.6758C82.8139 34.75 82.9258 34.6381 82.9258 34.5V30.5Z"
                     fill="url(#paint2_linear_404_18746)"
                     stroke="url(#paint3_linear_404_18746)"
-                    stroke-width="0.5"
+                    strokeWidth="0.5"
                 />
             </g>
             <rect x="89.5" y="13" width="30" height="30" fill="url(#pattern0_404_18746)" />
@@ -43,8 +43,8 @@ export const BitbucketOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = 
                     y2="23.5"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#B3BAC5" />
-                    <stop offset="1" stop-color="#DFE1E6" stop-opacity="0" />
+                    <stop stopColor="#B3BAC5" />
+                    <stop offset="1" stopColor="#DFE1E6" stopOpacity="0" />
                 </linearGradient>
                 <linearGradient
                     id="paint1_linear_404_18746"
@@ -54,8 +54,8 @@ export const BitbucketOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = 
                     y2="23.5"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#B3BAC5" stop-opacity="0.4" />
-                    <stop offset="1" stop-color="#B3BAC5" stop-opacity="0" />
+                    <stop stopColor="#B3BAC5" stopOpacity="0.4" />
+                    <stop offset="1" stopColor="#B3BAC5" stopOpacity="0" />
                 </linearGradient>
                 <linearGradient
                     id="paint2_linear_404_18746"
@@ -65,8 +65,8 @@ export const BitbucketOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = 
                     y2="32.5"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#B3BAC5" />
-                    <stop offset="1" stop-color="#DFE1E6" stop-opacity="0" />
+                    <stop stopColor="#B3BAC5" />
+                    <stop offset="1" stopColor="#DFE1E6" stopOpacity="0" />
                 </linearGradient>
                 <linearGradient
                     id="paint3_linear_404_18746"
@@ -76,8 +76,8 @@ export const BitbucketOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = 
                     y2="32.5"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#B3BAC5" stop-opacity="0.4" />
-                    <stop offset="1" stop-color="#B3BAC5" stop-opacity="0" />
+                    <stop stopColor="#B3BAC5" stopOpacity="0.4" />
+                    <stop offset="1" stopColor="#B3BAC5" stopOpacity="0" />
                 </linearGradient>
                 <clipPath id="clip0_404_18746">
                     <rect width="40" height="40" fill="white" transform="translate(8.5 8)" />

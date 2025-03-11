@@ -16,7 +16,6 @@ import ProductSelector from './ProductSelector';
 import { SimpleSiteAuthenticator } from './SimpleSiteAuthenticator';
 import { AtlascodeErrorBoundary } from '../common/ErrorBoundary';
 import { AnalyticsView } from '../../../analyticsTypes';
-import { Experiments } from '../../../util/featureFlags';
 import { CommonMessageType } from '../../../lib/ipc/toUI/common';
 import { OnboardingActionType } from '../../../lib/ipc/fromUI/onboarding';
 import { JiraOnboarding } from './JiraOnboarding';
@@ -70,9 +69,11 @@ export const OnboardingPage: React.FunctionComponent = () => {
         window.addEventListener('message', (event) => {
             const message = event.data;
             if (message.command === CommonMessageType.UpdateExperimentValues) {
-                const experimentValue = message.experimentValues[Experiments.NewAuthUI];
-                if (typeof experimentValue === 'string' && experimentValue !== undefined && experimentValue !== null) {
-                    setUseAuthUI(experimentValue === 'new');
+                const experimentValue = message.experimentValues['atlascode_new_auth_ui'];
+                if (typeof experimentValue === 'string' && experimentValue.trim().toLowerCase() === 'new') {
+                    setUseAuthUI(true);
+                } else {
+                    setUseAuthUI(false);
                 }
             }
         });

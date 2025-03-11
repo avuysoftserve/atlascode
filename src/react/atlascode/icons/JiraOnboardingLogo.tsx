@@ -10,9 +10,9 @@ export const JiraOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = (prop
             xmlns="http://www.w3.org/2000/svg"
             xmlnsXlink="http://www.w3.org/1999/xlink"
         >
-            <g clip-path="url(#clip0_404_18727)">
-                <g clip-path="url(#clip1_404_18727)">
-                    <g clip-path="url(#clip2_404_18727)">
+            <g clipPath="url(#clip0_404_18727)">
+                <g clipPath="url(#clip1_404_18727)">
+                    <g clipPath="url(#clip2_404_18727)">
                         <path
                             d="M22.2925 35.2279H19.5185C15.3348 35.2279 12.3335 32.6653 12.3335 28.913H27.2492C28.0223 28.913 28.5225 29.4621 28.5225 30.2401V45.2493C24.7936 45.2493 22.2925 42.2292 22.2925 38.0193V35.2279ZM29.6594 27.769H26.8854C22.7017 27.769 19.7004 25.2522 19.7004 21.4999H34.6161C35.3892 21.4999 35.9349 22.0033 35.9349 22.7812V37.7905C32.2059 37.7905 29.6594 34.7703 29.6594 30.5604V27.769ZM37.0717 20.3559H34.2978C30.1141 20.3559 27.1128 17.7933 27.1128 14.041H42.0285C42.8015 14.041 43.3018 14.5901 43.3018 15.3223V30.3316C39.5728 30.3316 37.0717 27.3114 37.0717 23.1015V20.3559Z"
                             fill="#357DE8"
@@ -25,13 +25,13 @@ export const JiraOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = (prop
                     d="M50.0747 21.5C50.0747 21.3619 50.1866 21.25 50.3247 21.25H73.0084C73.0626 21.25 73.1153 21.2676 73.1586 21.3002L75.8184 23.3002C75.9514 23.4002 75.9514 23.5998 75.8184 23.6998L73.1586 25.6998C73.1153 25.7324 73.0626 25.75 73.0084 25.75H50.3247C50.1866 25.75 50.0747 25.6381 50.0747 25.5V21.5Z"
                     fill="url(#paint0_linear_404_18727)"
                     stroke="url(#paint1_linear_404_18727)"
-                    stroke-width="0.5"
+                    strokeWidth="0.5"
                 />
                 <path
                     d="M82.9253 30.5C82.9253 30.3619 82.8134 30.25 82.6753 30.25H59.9916C59.9374 30.25 59.8847 30.2676 59.8414 30.3002L57.1816 32.3002C57.0486 32.4002 57.0486 32.5998 57.1816 32.6998L59.8414 34.6998C59.8847 34.7324 59.9374 34.75 59.9916 34.75H82.6753C82.8134 34.75 82.9253 34.6381 82.9253 34.5V30.5Z"
                     fill="url(#paint2_linear_404_18727)"
                     stroke="url(#paint3_linear_404_18727)"
-                    stroke-width="0.5"
+                    strokeWidth="0.5"
                 />
             </g>
             <rect x="89.5" y="13" width="30" height="30" fill="url(#pattern0_404_18727)" />
@@ -47,8 +47,8 @@ export const JiraOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = (prop
                     y2="23.5"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#B3BAC5" />
-                    <stop offset="1" stop-color="#DFE1E6" stop-opacity="0" />
+                    <stop stopColor="#B3BAC5" />
+                    <stop offset="1" stopColor="#DFE1E6" stopOpacity="0" />
                 </linearGradient>
                 <linearGradient
                     id="paint1_linear_404_18727"
@@ -58,8 +58,8 @@ export const JiraOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = (prop
                     y2="23.5"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#B3BAC5" stop-opacity="0.4" />
-                    <stop offset="1" stop-color="#B3BAC5" stop-opacity="0" />
+                    <stop stopColor="#B3BAC5" stopOpacity="0.4" />
+                    <stop offset="1" stopColor="#B3BAC5" stopOpacity="0" />
                 </linearGradient>
                 <linearGradient
                     id="paint2_linear_404_18727"
@@ -69,8 +69,8 @@ export const JiraOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = (prop
                     y2="32.5"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#B3BAC5" />
-                    <stop offset="1" stop-color="#DFE1E6" stop-opacity="0" />
+                    <stop stopColor="#B3BAC5" />
+                    <stop offset="1" stopColor="#DFE1E6" stopOpacity="0" />
                 </linearGradient>
                 <linearGradient
                     id="paint3_linear_404_18727"
@@ -80,8 +80,8 @@ export const JiraOnboardingLogo: React.FC<React.SVGProps<SVGSVGElement>> = (prop
                     y2="32.5"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#B3BAC5" stop-opacity="0.4" />
-                    <stop offset="1" stop-color="#B3BAC5" stop-opacity="0" />
+                    <stop stopColor="#B3BAC5" stopOpacity="0.4" />
+                    <stop offset="1" stopColor="#B3BAC5" stopOpacity="0" />
                 </linearGradient>
                 <clipPath id="clip0_404_18727">
                     <rect width="40" height="40" fill="white" transform="translate(8.5 8)" />
