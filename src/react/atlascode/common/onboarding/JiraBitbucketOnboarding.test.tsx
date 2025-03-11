@@ -1,6 +1,5 @@
 import React from 'react';
 import { JiraBitbucketOnboarding } from './JiraBitbucketOnboarding';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { render, screen } from '@testing-library/react';
 
 const MockJiraComponent = ({ callback }: { callback?: () => void }) => {
