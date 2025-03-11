@@ -13,11 +13,5 @@ module.exports = {
     },
     transformIgnorePatterns: ['/node_modules/'],
     testPathIgnorePatterns: ['/node_modules/', '/e2e/', 'src/react'],
-    verbose: true,
     setupFilesAfterEnv: ['<rootDir>/setupTests.js'],
-    // coverage configuration
-    collectCoverage: true,
-    collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts'],
-    coverageDirectory: 'coverage',
-    coverageReporters: ['json', 'lcov', 'text-summary', 'clover'],
 };
