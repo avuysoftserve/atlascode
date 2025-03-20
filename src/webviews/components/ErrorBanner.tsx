@@ -4,7 +4,7 @@ import * as React from 'react';
 
 export default class ErrorBanner extends React.Component<
     { errorDetails: any; onDismissError: () => void },
-    { errorDetails: any }
+    { errorDetails: any } // something
 > {
     constructor(props: any) {
         super(props);
