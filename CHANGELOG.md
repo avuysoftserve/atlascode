@@ -4,7 +4,7 @@
 
 ### Bug Fixes
 
-- Editting comments in PRs work. 
+- Editing comments in PRs work. 
 
 ## What's new in 3.4.14
 
