@@ -182,7 +182,7 @@ const PullRequestSidebar: React.FC<PullRequestSidebarProps> = ({ state, controll
             <Grid container spacing={1} direction={'column'}>
                 <Grid item>
                     <BasicPanel
-                        isLoading={state.loadState.buildStatuses}
+                        isLoading={state.loadState.basicData}
                         isDefaultExpanded
                         hidden={false}
                         title={`Reviewers`}
