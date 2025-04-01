@@ -66,7 +66,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
 
     prHeaderTitle: {
-        flex: '1 0 auto',
+        flex: '1 1 auto',
         font: token('font.heading.large'),
     },
 }));
