@@ -1,6 +1,6 @@
 import { Box, ExpansionPanel, ExpansionPanelDetails, ExpansionPanelSummary, makeStyles } from '@material-ui/core';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { PanelTitle } from '../common/PanelTitle';
 import { PanelSubtitle } from './PanelSubtitle';
 import Skeleton from '@atlaskit/skeleton';
@@ -52,11 +52,6 @@ export const BasicPanel: React.FC<BasicPanelProps> = memo(
             setInternalExpanded(expanded);
         }, []);
 
-        useEffect(() => {
-            if (title === 'Reviewers') {
-                console.log(`[${title}] hidden: ${hidden}, isLoading: ${isLoading}`);
-            }
-        }, [isLoading, hidden, title]);
         return (
             <Box hidden={!isLoading && hidden} className={classes.root}>
                 <ExpansionPanel
