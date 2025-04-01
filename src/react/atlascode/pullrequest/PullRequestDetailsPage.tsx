@@ -23,6 +23,7 @@ import { SummaryPanel } from './SummaryPanel';
 import { AtlascodeErrorBoundary } from '../common/ErrorBoundary';
 import { AnalyticsView } from 'src/analyticsTypes';
 import { PullRequestHeader } from './PullRequestHeader';
+import EmptyState from '@atlaskit/empty-state';
 
 const useStyles = makeStyles((theme: Theme) => ({
     grow: {
@@ -164,20 +165,26 @@ interface PullRequestSidebarProps {
 }
 
 const PullRequestSidebar: React.FC<PullRequestSidebarProps> = ({ state, controller }) => {
-    const taskTitle = useMemo(() => {
+    const taskSubtitle = useMemo(() => {
         const numTasks = state.tasks.length;
         const numCompletedTasks = state.tasks.filter((task) => task.isComplete).length;
         return numTasks === 0 ? '0 tasks' : `${numCompletedTasks} of ${numTasks} complete`;
     }, [state.tasks]);
+
+    const buildStatusSubtitle = useMemo(() => {
+        const numBuilds = state.buildStatuses.length;
+        const numSuccessfulBuilds = state.buildStatuses.filter((status) => status.state === 'SUCCESSFUL').length;
+        return numBuilds === 0 ? '0 builds' : `${numSuccessfulBuilds} of ${numBuilds} passed`;
+    }, [state.buildStatuses]);
 
     return (
         <Box margin={2}>
             <Grid container spacing={1} direction={'column'}>
                 <Grid item>
                     <BasicPanel
-                        isLoading={state.loadState.basicData}
+                        isLoading={state.loadState.buildStatuses}
                         isDefaultExpanded
-                        hidden={state.buildStatuses.length === 0}
+                        hidden={false}
                         title={`Reviewers`}
                     >
                         <Reviewers
@@ -193,10 +200,9 @@ const PullRequestSidebar: React.FC<PullRequestSidebarProps> = ({ state, controll
                     <BasicPanel
                         isLoading={state.loadState.buildStatuses}
                         isDefaultExpanded
-                        hidden={state.buildStatuses.length === 0}
-                        title={`${
-                            state.buildStatuses.filter((status) => status.state === 'SUCCESSFUL').length
-                        } of ${state.buildStatuses.length} build${state.buildStatuses.length > 0 ? 's' : ''} passed`}
+                        hidden={false}
+                        subtitle={buildStatusSubtitle}
+                        title={'Builds'}
                     >
                         <PRBuildStatus
                             buildStatuses={state.buildStatuses}
@@ -208,7 +214,7 @@ const PullRequestSidebar: React.FC<PullRequestSidebarProps> = ({ state, controll
                 <Grid item>
                     <BasicPanel
                         title={'Tasks'}
-                        subtitle={taskTitle}
+                        subtitle={taskSubtitle}
                         isDefaultExpanded
                         isLoading={state.loadState.tasks}
                     >
@@ -234,7 +240,11 @@ export const PullRequestDetailsPage: React.FunctionComponent = () => {
                 postMessageFunc={controller.postMessage}
             >
                 <Container maxWidth="xl">
-                    <PullRequestDetailsPageContent state={state} controller={controller} />
+                    {state.loadState.basicData ? (
+                        <EmptyState header="Loading..." headingLevel={3} />
+                    ) : (
+                        <PullRequestDetailsPageContent state={state} controller={controller} />
+                    )}
                 </Container>
             </AtlascodeErrorBoundary>
         </PullRequestDetailsControllerContext.Provider>

@@ -177,6 +177,7 @@ function pullRequestDetailsReducer(
     state: PullRequestDetailsState,
     action: PullRequestDetailsUIAction,
 ): PullRequestDetailsState {
+    console.log('pullRequestDetailsReducer', action, state);
     switch (action.type) {
         case PullRequestDetailsUIActionType.Init: {
             const newstate = {
