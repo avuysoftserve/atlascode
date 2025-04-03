@@ -209,6 +209,7 @@ export class CredentialManager implements Disposable {
         }
     }
 
+    // Todo [AXON-288]: Refactor this method to use the secretstorage instead of keychain
     private async addSiteInformationToSecretStorage(productKey: string, credentialId: string, info: AuthInfo) {
         await this._queue.add(
             async () => {
