@@ -139,11 +139,11 @@ export class ClientManager implements Disposable {
             } else {
                 result = {
                     repositories:
-                        isBasicAuthInfo(info) || isPATAuthInfo(info) || info.type === 'hardcoded'
+                        isBasicAuthInfo(info) || isPATAuthInfo(info)
                             ? new ServerRepositoriesApi(this.createHTTPClient(site, info))
                             : undefined!,
                     pullrequests:
-                        isBasicAuthInfo(info) || isPATAuthInfo(info) || info.type === 'hardcoded'
+                        isBasicAuthInfo(info) || isPATAuthInfo(info)
                             ? new ServerPullRequestApi(this.createHTTPClient(site, info))
                             : undefined!,
                     issues: undefined,
