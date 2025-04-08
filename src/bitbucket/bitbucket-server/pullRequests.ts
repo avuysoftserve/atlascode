@@ -1019,6 +1019,7 @@ export class ServerPullRequestApi implements PullRequestApi {
                 closeSourceBranch: false,
                 taskCount: taskCount,
                 buildStatuses: [],
+                draft: data.draft,
             },
         };
     }
