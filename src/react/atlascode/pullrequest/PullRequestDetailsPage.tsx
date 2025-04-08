@@ -1,3 +1,4 @@
+import EmptyState from '@atlaskit/empty-state';
 import { InlineTextEditor } from '@atlassianlabs/guipi-core-components';
 import {
     Box,
@@ -122,7 +123,11 @@ export const PullRequestDetailsPage: React.FunctionComponent = () => {
                 postMessageFunc={controller.postMessage}
             >
                 <Container maxWidth="xl">
-                    <PullRequestDetailsPageContent state={state} controller={controller} />
+                    {state.loadState.basicData ? (
+                        <EmptyState header="Loading..." headingLevel={3} />
+                    ) : (
+                        <PullRequestDetailsPageContent state={state} controller={controller} />
+                    )}
                 </Container>
             </AtlascodeErrorBoundary>
         </PullRequestDetailsControllerContext.Provider>

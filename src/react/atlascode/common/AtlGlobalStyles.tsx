@@ -7,6 +7,15 @@ const useStyles = makeStyles(
     (theme: Theme) =>
         ({
             '@global': {
+                // Using Atlassian specific tokens
+                '.vscode-dark': {
+                    '--ds-skeleton': '#CECED912',
+                    '--ds-skeleton-subtle': '#BDBDBD0A',
+                },
+                '.vscode-light': {
+                    '--ds-skeleton': '#0515240F',
+                    '--ds-skeleton-subtle': '#17171708',
+                },
                 p: {
                     margin: 0,
                 },

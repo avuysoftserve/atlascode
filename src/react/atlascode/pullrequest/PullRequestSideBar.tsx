@@ -14,11 +14,17 @@ interface PullRequestSidebarProps {
 }
 
 export const PullRequestSidebar: React.FC<PullRequestSidebarProps> = ({ state, controller }) => {
-    const taskTitle = useMemo(() => {
+    const taskSubtitle = useMemo(() => {
         const numTasks = state.tasks.length;
         const numCompletedTasks = state.tasks.filter((task) => task.isComplete).length;
         return numTasks === 0 ? '0 tasks' : `${numCompletedTasks} of ${numTasks} complete`;
     }, [state.tasks]);
+
+    const buildStatusSubtitle = useMemo(() => {
+        const numBuilds = state.buildStatuses.length;
+        const numSuccessfulBuilds = state.buildStatuses.filter((status) => status.state === 'SUCCESSFUL').length;
+        return numBuilds === 0 ? '0 builds' : `${numSuccessfulBuilds} of ${numBuilds} passed`;
+    }, [state.buildStatuses]);
 
     return (
         <Box margin={2}>
@@ -86,10 +92,9 @@ export const PullRequestSidebar: React.FC<PullRequestSidebarProps> = ({ state, c
                     <BasicPanel
                         isLoading={state.loadState.buildStatuses}
                         isDefaultExpanded
-                        hidden={state.buildStatuses.length === 0}
-                        title={`${
-                            state.buildStatuses.filter((status) => status.state === 'SUCCESSFUL').length
-                        } of ${state.buildStatuses.length} build${state.buildStatuses.length > 0 ? 's' : ''} passed`}
+                        hidden={false}
+                        subtitle={buildStatusSubtitle}
+                        title={'Builds'}
                     >
                         <PRBuildStatus
                             buildStatuses={state.buildStatuses}
@@ -101,7 +106,7 @@ export const PullRequestSidebar: React.FC<PullRequestSidebarProps> = ({ state, c
                 <Grid item>
                     <BasicPanel
                         title={'Tasks'}
-                        subtitle={taskTitle}
+                        subtitle={taskSubtitle}
                         isDefaultExpanded
                         isLoading={state.loadState.tasks}
                     >
