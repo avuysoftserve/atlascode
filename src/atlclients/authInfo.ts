@@ -272,7 +272,9 @@ export function isBasicAuthInfo(a: AuthInfo | undefined): a is BasicAuthInfo {
 
 export function isPATAuthInfo(a: AuthInfo | undefined): a is PATAuthInfo {
     // This check should be retired over time when auth info is updated to use the new type
-    const oldCheck = a && (<PATAuthInfo>a).token !== undefined;
+    // Hardcoded check is needed because token exists in hardcoded auth info as well
+    // This is the reason why the introduction of the `type` field is so crucial in the first place!
+    const oldCheck = a && (<PATAuthInfo>a).token !== undefined && a.type !== 'hardcoded';
     return oldCheck || (!!a && a.type === 'pat');
 }
 
