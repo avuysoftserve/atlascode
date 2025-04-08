@@ -98,7 +98,13 @@ export interface BasicAuthInfo extends AuthInfoCommon {
     password: string;
 }
 
-export type AuthInfo = NoAuthInfo | OAuthInfo | BasicAuthInfo | PATAuthInfo;
+export interface HardCodedAuthInfo extends AuthInfoCommon {
+    type: 'hardcoded';
+    token: string;
+    authHeader: 'bearer' | 'basic';
+}
+
+export type AuthInfo = NoAuthInfo | OAuthInfo | BasicAuthInfo | PATAuthInfo | HardCodedAuthInfo;
 
 export interface UserInfo {
     id: string;
@@ -273,13 +279,11 @@ export function isPATAuthInfo(a: AuthInfo | undefined): a is PATAuthInfo {
 export function getSecretForAuthInfo(info: AuthInfo): string {
     if (isOAuthInfo(info)) {
         return info.access + info.refresh;
-    }
-
-    if (isBasicAuthInfo(info)) {
+    } else if (isBasicAuthInfo(info)) {
         return info.password;
-    }
-
-    if (isPATAuthInfo(info)) {
+    } else if (isPATAuthInfo(info)) {
+        return info.token;
+    } else if (info.type === 'hardcoded') {
         return info.token;
     }
 
