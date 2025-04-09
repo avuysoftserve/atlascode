@@ -37,6 +37,7 @@ export interface PRDirectory {
     files: DiffViewArgs[];
     subdirs: Map<string, PRDirectory>;
     prUrl: string;
+    fullPath: string;
 }
 
 export interface FileDiffQueryParams {
@@ -291,6 +292,7 @@ export async function createFileChangesNodes(
                 files: [],
                 subdirs: new Map<string, PRDirectory>(),
                 prUrl: allDiffData[0].fileDisplayData.prUrl,
+                fullPath: '',
             };
 
             allDiffData.forEach((diffData) => createdNestedFileStructure(diffData, tempDirectory));
@@ -324,6 +326,7 @@ export async function createFileChangesNodes(
         files: [],
         subdirs: new Map<string, PRDirectory>(),
         prUrl: allDiffData[0].fileDisplayData.prUrl,
+        fullPath: '',
     };
 
     if (configuration.get<boolean>('bitbucket.explorer.nestFilesEnabled')) {
@@ -352,17 +355,21 @@ function createdNestedFileStructure(diffViewData: DiffViewArgs, directory: PRDir
     //If we just have a file, the dirName will be '.', but we don't want to tuck that in the '.' directory, so there's a ternary operation to deal with that
     const splitFileName = [...(dirName === '.' ? [] : dirName.split('/')), baseName];
     let currentDirectory = directory;
+    let currentPath = '';
+
     for (let i = 0; i < splitFileName.length; i++) {
         if (i === splitFileName.length - 1) {
             currentDirectory.files.push(diffViewData); //The last name in the path is the name of the file, so we've reached the end of the file tree
         } else {
             //Traverse the file tree, and if a folder doesn't exist, add it
+            currentPath = currentPath ? `${currentPath}/${dirName}` : dirName;
             if (!currentDirectory.subdirs.has(splitFileName[i])) {
                 currentDirectory.subdirs.set(splitFileName[i], {
                     name: splitFileName[i],
                     files: [],
                     subdirs: new Map<string, PRDirectory>(),
                     prUrl: directory.prUrl,
+                    fullPath: currentPath,
                 });
             }
             currentDirectory = currentDirectory.subdirs.get(splitFileName[i])!;

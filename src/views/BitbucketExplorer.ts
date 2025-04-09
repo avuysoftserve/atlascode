@@ -14,44 +14,49 @@ import { RefreshTimer } from './RefreshTimer';
 import { BitbucketActivityMonitor } from './BitbucketActivityMonitor';
 import { PullRequestFilesNode } from './nodes/pullRequestFilesNode';
 import { DirectoryNode } from './nodes/directoryNode';
+import { TreeView } from 'vscode';
+import { AbstractBaseNode } from './nodes/abstractBaseNode';
 
 export abstract class BitbucketExplorer extends Explorer implements Disposable {
     private _disposable: Disposable;
 
     private monitor: BitbucketActivityMonitor | undefined;
     private _refreshTimer: RefreshTimer;
+    private _onDidChangeTreeData = new vscode.EventEmitter<AbstractBaseNode | undefined>();
+
+    protected newTreeView(): TreeView<AbstractBaseNode> | undefined {
+        super.newTreeView();
+        // Re-setup checkbox handling when tree view is recreated
+        this.setupCheckboxHandling();
+        return this.treeView;
+    }
 
     private setupCheckboxHandling(): void {
-        setTimeout(() => {
-            if (this.treeView) {
-                this.treeView.onDidChangeCheckboxState((event) => {
-                    event.items.forEach(([item, state]) => {
-                        const checked = state === vscode.TreeItemCheckboxState.Checked;
-
-                        if (item instanceof PullRequestFilesNode) {
-                            // Handle individual file checkbox changes
-                            item.checked = checked;
-                        } else if (item instanceof DirectoryNode) {
-                            // Set flag to indicate direct directory checkbox click
-                            (item as any)._isDirectCheckboxClick = true;
-                            item.checked = checked;
-                            (item as any)._isDirectCheckboxClick = false;
-                        }
-                    });
-
-                    // Refresh the tree view after all changes
-                    if (this.treeDataProvider) {
-                        this.treeDataProvider.refresh();
-                    }
-                });
-            }
-        }, 100);
+        if (!this.treeView) {
+            return;
+        }
+        this.treeView.onDidChangeCheckboxState((event) => {
+            event.items.forEach(([item, state]) => {
+                const checked = state === vscode.TreeItemCheckboxState.Checked;
+                if (item instanceof PullRequestFilesNode) {
+                    item.checked = checked;
+                    // Refresh only this node
+                    this._onDidChangeTreeData.fire(item);
+                } else if (item instanceof DirectoryNode) {
+                    item.checked = checked;
+                    // Refresh only the directory and its children
+                    this._onDidChangeTreeData.fire(item);
+                }
+            });
+        });
     }
 
     constructor(protected ctx: BitbucketContext) {
         super(() => this.dispose());
 
-        this.setupCheckboxHandling();
+        setTimeout(() => {
+            this.setupCheckboxHandling();
+        }, 50);
 
         Container.context.subscriptions.push(configuration.onDidChange(this._onConfigurationChanged, this));
 

@@ -1,28 +1,26 @@
 import vscode from 'vscode';
 
 export class CheckboxStateManager {
-    constructor(private context: vscode.ExtensionContext) {}
-
-    private readonly CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
-
-    isChecked(fileId: string): boolean {
-        const checkedFiles = this.context.workspaceState.get<string[]>('bitbucket.checkedFiles', []);
-        return checkedFiles.includes(fileId);
+    private checkedStates: Set<string>;
+    constructor(private context: vscode.ExtensionContext) {
+        // Initialize from stored state
+        const savedStates = this.context.workspaceState.get<string[]>('bitbucket.checkedFiles', []);
+        this.checkedStates = new Set(savedStates);
     }
-
-    setChecked(fileId: string, checked: boolean): void {
-        const checkedFiles = this.context.workspaceState.get<string[]>('bitbucket.checkedFiles', []);
-
-        if (checked && !checkedFiles.includes(fileId)) {
-            checkedFiles.push(fileId);
-            this.context.workspaceState.update('bitbucket.checkedFiles', checkedFiles);
-        } else if (!checked && checkedFiles.includes(fileId)) {
-            const updatedChecked = checkedFiles.filter((id) => id !== fileId);
-            this.context.workspaceState.update('bitbucket.checkedFiles', updatedChecked);
+    setChecked(id: string, checked: boolean): void {
+        if (checked) {
+            this.checkedStates.add(id);
+        } else {
+            this.checkedStates.delete(id);
         }
+        // Update storage immediately
+        this.context.workspaceState.update('bitbucket.checkedFiles', Array.from(this.checkedStates));
     }
-
+    isChecked(id: string): boolean {
+        return this.checkedStates.has(id);
+    }
     clearCheckedFiles(): void {
+        this.checkedStates.clear();
         this.context.workspaceState.update('bitbucket.checkedFiles', []);
     }
 }

@@ -14,17 +14,19 @@ export class DirectoryNode extends AbstractBaseNode {
     ) {
         super();
     }
+
     get directoryId(): string {
         const prUrlPath = vscode.Uri.parse(this.prUrl).path;
         const prId = prUrlPath.slice(prUrlPath.lastIndexOf('/') + 1);
         const repoUrl = this.prUrl.slice(0, this.prUrl.indexOf('/pull-requests'));
         const repoId = repoUrl.slice(repoUrl.lastIndexOf('/') + 1);
         const sectionPart = this.section === 'commits' ? `-commit-${this.commitHash || 'unknown'}` : '';
+        // Use the pre-calculated full path
+        const fullPath = this.directoryData.fullPath;
         Logger.debug(
-            'DIRECTORY ID',
-            `repo-${repoId}-pr-${prId}${sectionPart}-commit-${this.commitHash}-section-${this.section}-directory-${this.directoryData.name}`,
+            `repo-${repoId}-pr-${prId}${sectionPart}-commit-${this.commitHash}-section-${this.section}-directory-${fullPath}`,
         );
-        return `repo-${repoId}-pr-${prId}${sectionPart}-commit-${this.commitHash}-section-${this.section}-directory-${this.directoryData.name}`;
+        return `repo-${repoId}-pr-${prId}${sectionPart}-commit-${this.commitHash}-section-${this.section}-directory-${fullPath}`;
     }
 
     private areAllChildrenChecked(): boolean {
@@ -41,28 +43,27 @@ export class DirectoryNode extends AbstractBaseNode {
         return allFilesChecked && allSubdirsChecked;
     }
 
-    get checked(): boolean {
-        return Container.checkboxStateManager.isChecked(this.directoryId);
-    }
-
+    private _isDirectClick = false;
     set checked(value: boolean) {
+        Logger.debug(`Setting directory ${this.directoryId} checked state to ${value}`);
+        // Update own state without triggering refresh
         Container.checkboxStateManager.setChecked(this.directoryId, value);
-
-        // Only propagate to children if this is a direct directory checkbox click
+        // If direct click, update children states
         if (this._isDirectClick) {
+            Logger.debug('Propagating state to children');
             this.directoryData.files.forEach((file) => {
                 const fileNode = new PullRequestFilesNode(file, this.section, this.commitHash);
-                fileNode.checked = value;
+                Container.checkboxStateManager.setChecked(fileNode.fileId, value);
             });
-
             this.directoryData.subdirs.forEach((subdir) => {
                 const subdirNode = new DirectoryNode(subdir, this.prUrl, this.section, this.commitHash);
-                subdirNode.checked = value;
+                Container.checkboxStateManager.setChecked(subdirNode.directoryId, value);
             });
         }
     }
-
-    private _isDirectClick = false;
+    get checked(): boolean {
+        return Container.checkboxStateManager.isChecked(this.directoryId);
+    }
 
     async getTreeItem(): Promise<vscode.TreeItem> {
         const item = new vscode.TreeItem(this.directoryData.name, vscode.TreeItemCollapsibleState.Expanded);
