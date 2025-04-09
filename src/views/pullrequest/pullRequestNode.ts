@@ -21,6 +21,29 @@ import { SimpleNode } from '../nodes/simpleNode';
 import { createFileChangesNodes } from './diffViewHelper';
 
 export const PullRequestContextValue = 'pullrequest';
+
+// New class to represent the Files folder
+export class FilesFolderNode extends AbstractBaseNode {
+    constructor(
+        private fileNodes: AbstractBaseNode[],
+        parent: AbstractBaseNode | undefined,
+    ) {
+        super(parent);
+    }
+
+    getTreeItem(): vscode.TreeItem {
+        const item = new vscode.TreeItem('Files', vscode.TreeItemCollapsibleState.Collapsed);
+        item.tooltip = 'Changed files in this pull request';
+        item.iconPath = Resources.icons.get('folder');
+        item.contextValue = 'filesFolder';
+        return item;
+    }
+
+    async getChildren(): Promise<AbstractBaseNode[]> {
+        return this.fileNodes;
+    }
+}
+
 export class PullRequestTitlesNode extends AbstractBaseNode {
     private treeItem: vscode.TreeItem;
     public prHref: string;
@@ -97,11 +120,12 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         try {
             [files, comments] = await criticalPromise;
             fileChangedNodes = await createFileChangesNodes(this.pr, comments, files, [], []);
-            // update loadedChildren with critical data without commits
+            // Update loadedChildren with critical data without commits
+            // Add FilesFolderNode as a container for changed files
             this.loadedChildren = [
                 new DescriptionNode(this.pr, this),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, [], true)] : []),
-                ...fileChangedNodes,
+                new FilesFolderNode(fileChangedNodes, this),
             ];
         } catch (error) {
             Logger.debug('error fetching pull request details', error);
@@ -126,13 +150,14 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
                 this.createRelatedBitbucketIssueNode(commits, allComments),
                 createFileChangesNodes(this.pr, allComments, fileDiffs, conflictedFiles, tasks),
             ]);
-            // update loadedChildren with additional data
+            // Update loadedChildren with additional data
+            // Use FilesFolderNode to contain all file nodes
             this.loadedChildren = [
                 new DescriptionNode(this.pr, this),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
                 ...jiraIssueNodes,
                 ...bbIssueNodes,
-                ...fileNodes,
+                new FilesFolderNode(fileNodes, this),
             ];
         } catch (error) {
             Logger.debug('error fetching additional pull request details', error);
@@ -165,11 +190,11 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         [fileDiffs, allComments, fileChangedNodes] = await this.criticalData(criticalPromise);
         // get commitsData
         const commits = await commitsPromise;
-        // update loadedChildren with commits data
+        // Update loadedChildren with commits data and FilesFolderNode
         this.loadedChildren = [
             new DescriptionNode(this.pr, this),
             ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
-            ...fileChangedNodes,
+            new FilesFolderNode(fileChangedNodes, this),
         ];
         // refresh TreeView
         this.refresh();

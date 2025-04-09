@@ -16,10 +16,10 @@ import { Logger } from '../../logger';
 import { addTasksToCommentHierarchy } from '../../webview/common/pullRequestHelperActions';
 import { AbstractBaseNode } from '../nodes/abstractBaseNode';
 import { DirectoryNode } from '../nodes/directoryNode';
-import { PullRequestFilesNode } from '../nodes/pullRequestFilesNode';
 import { SimpleNode } from '../nodes/simpleNode';
 import { PullRequestNodeDataProvider } from '../pullRequestNodeDataProvider';
 import { PullRequestCommentController } from './prCommentController';
+import { PullRequestFilesNode } from '../nodes/pullRequestFilesNode';
 
 export interface DiffViewArgs {
     diffArgs: any[];
@@ -36,6 +36,7 @@ export interface PRDirectory {
     name: string;
     files: DiffViewArgs[];
     subdirs: Map<string, PRDirectory>;
+    prUrl: string;
 }
 
 export interface FileDiffQueryParams {
@@ -265,10 +266,11 @@ export async function createFileChangesNodes(
     conflictedFiles: string[],
     tasks: Task[],
     commitRange?: { lhs: string; rhs: string },
+    section?: 'files' | 'commits',
 ): Promise<AbstractBaseNode[]> {
     const allDiffData = await Promise.all(
         fileDiffs.map(async (fileDiff) => {
-            const commentsWithTasks = { ...allComments, data: addTasksToCommentHierarchy(allComments.data, tasks) }; //Comments need to be infused with tasks now because they are gathered separately
+            const commentsWithTasks = { ...allComments, data: addTasksToCommentHierarchy(allComments.data, tasks) };
             return await getArgsForDiffView(
                 commentsWithTasks,
                 fileDiff,
@@ -280,29 +282,59 @@ export async function createFileChangesNodes(
         }),
     );
 
-    if (configuration.get<boolean>('bitbucket.explorer.nestFilesEnabled')) {
-        //Create a dummy root directory data structure to hold the files
-        const rootDirectory: PRDirectory = {
-            name: '',
-            files: [],
-            subdirs: new Map<string, PRDirectory>(),
-        };
-        allDiffData.forEach((diffData) => createdNestedFileStructure(diffData, rootDirectory));
-        flattenFileStructure(rootDirectory);
+    // For commits section, return file nodes directly
+    if (section === 'commits') {
+        if (configuration.get<boolean>('bitbucket.explorer.nestFilesEnabled')) {
+            // Create temporary directory to handle nesting
+            const tempDirectory: PRDirectory = {
+                name: '',
+                files: [],
+                subdirs: new Map<string, PRDirectory>(),
+                prUrl: allDiffData[0].fileDisplayData.prUrl,
+            };
 
-        //While creating the directory, we actually put all the files/folders inside of a root directory. We now want to go one level in.
-        const directoryNodes: DirectoryNode[] = Array.from(
-            rootDirectory.subdirs.values(),
-            (subdir) => new DirectoryNode(subdir),
-        );
-        const childNodes: AbstractBaseNode[] = rootDirectory.files.map(
-            (diffViewArg) => new PullRequestFilesNode(diffViewArg),
-        );
-        return childNodes.concat(directoryNodes);
+            allDiffData.forEach((diffData) => createdNestedFileStructure(diffData, tempDirectory));
+            flattenFileStructure(tempDirectory);
+
+            // Convert nested structure to flat array of DirectoryNodes and FileNodes
+            const result: AbstractBaseNode[] = [];
+
+            // Add files from root level
+            result.push(
+                ...tempDirectory.files.map((file) => new PullRequestFilesNode(file, section, commitRange?.rhs)),
+            );
+
+            // Add directories from root level
+            result.push(
+                ...Array.from(tempDirectory.subdirs.values()).map(
+                    (subdir) => new DirectoryNode(subdir, tempDirectory.prUrl, section, commitRange?.rhs),
+                ),
+            );
+
+            return result;
+        } else {
+            // Return flat file structure
+            return allDiffData.map((diffData) => new PullRequestFilesNode(diffData, section, commitRange?.rhs));
+        }
     }
 
-    const result: AbstractBaseNode[] = [];
-    result.push(...allDiffData.map((diffData) => new PullRequestFilesNode(diffData)));
+    // For files section, keep existing behavior
+    const filesDirectory: PRDirectory = {
+        name: 'Files',
+        files: [],
+        subdirs: new Map<string, PRDirectory>(),
+        prUrl: allDiffData[0].fileDisplayData.prUrl,
+    };
+
+    if (configuration.get<boolean>('bitbucket.explorer.nestFilesEnabled')) {
+        allDiffData.forEach((diffData) => createdNestedFileStructure(diffData, filesDirectory));
+        flattenFileStructure(filesDirectory);
+    } else {
+        filesDirectory.files = allDiffData;
+    }
+
+    const result: AbstractBaseNode[] = [new DirectoryNode(filesDirectory, filesDirectory.prUrl, section)];
+
     if (allComments.next) {
         result.push(
             new SimpleNode(
@@ -310,6 +342,7 @@ export async function createFileChangesNodes(
             ),
         );
     }
+
     return result;
 }
 
@@ -329,6 +362,7 @@ function createdNestedFileStructure(diffViewData: DiffViewArgs, directory: PRDir
                     name: splitFileName[i],
                     files: [],
                     subdirs: new Map<string, PRDirectory>(),
+                    prUrl: directory.prUrl,
                 });
             }
             currentDirectory = currentDirectory.subdirs.get(splitFileName[i])!;

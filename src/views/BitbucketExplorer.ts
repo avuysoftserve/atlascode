@@ -12,6 +12,8 @@ import { DescriptionNode, PullRequestTitlesNode } from './pullrequest/pullReques
 import { PullRequestNodeDataProvider } from './pullRequestNodeDataProvider';
 import { RefreshTimer } from './RefreshTimer';
 import { BitbucketActivityMonitor } from './BitbucketActivityMonitor';
+import { PullRequestFilesNode } from './nodes/pullRequestFilesNode';
+import { DirectoryNode } from './nodes/directoryNode';
 
 export abstract class BitbucketExplorer extends Explorer implements Disposable {
     private _disposable: Disposable;
@@ -19,8 +21,37 @@ export abstract class BitbucketExplorer extends Explorer implements Disposable {
     private monitor: BitbucketActivityMonitor | undefined;
     private _refreshTimer: RefreshTimer;
 
+    private setupCheckboxHandling(): void {
+        setTimeout(() => {
+            if (this.treeView) {
+                this.treeView.onDidChangeCheckboxState((event) => {
+                    event.items.forEach(([item, state]) => {
+                        const checked = state === vscode.TreeItemCheckboxState.Checked;
+
+                        if (item instanceof PullRequestFilesNode) {
+                            // Handle individual file checkbox changes
+                            item.checked = checked;
+                        } else if (item instanceof DirectoryNode) {
+                            // Set flag to indicate direct directory checkbox click
+                            (item as any)._isDirectCheckboxClick = true;
+                            item.checked = checked;
+                            (item as any)._isDirectCheckboxClick = false;
+                        }
+                    });
+
+                    // Refresh the tree view after all changes
+                    if (this.treeDataProvider) {
+                        this.treeDataProvider.refresh();
+                    }
+                });
+            }
+        }, 100);
+    }
+
     constructor(protected ctx: BitbucketContext) {
         super(() => this.dispose());
+
+        this.setupCheckboxHandling();
 
         Container.context.subscriptions.push(configuration.onDidChange(this._onConfigurationChanged, this));
 
