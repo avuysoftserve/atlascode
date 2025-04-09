@@ -4,6 +4,7 @@ import { AbstractBaseNode } from './abstractBaseNode';
 import { PullRequestFilesNode } from './pullRequestFilesNode';
 import { Container } from 'src/container';
 import { Logger } from 'src/logger';
+import { PullRequest, WorkspaceRepo } from 'src/bitbucket/model';
 
 export class DirectoryNode extends AbstractBaseNode {
     constructor(
@@ -11,6 +12,7 @@ export class DirectoryNode extends AbstractBaseNode {
         private prUrl: string,
         private section: 'files' | 'commits' = 'files',
         private commitHash?: string,
+        private pr?: PullRequest,
     ) {
         super();
     }
@@ -20,18 +22,51 @@ export class DirectoryNode extends AbstractBaseNode {
         const prId = prUrlPath.slice(prUrlPath.lastIndexOf('/') + 1);
         const repoUrl = this.prUrl.slice(0, this.prUrl.indexOf('/pull-requests'));
         const repoId = repoUrl.slice(repoUrl.lastIndexOf('/') + 1);
-        const sectionPart = this.section === 'commits' ? `-commit-${this.commitHash || 'unknown'}` : '';
-        // Use the pre-calculated full path
-        const fullPath = this.directoryData.fullPath;
-        Logger.debug(
-            `repo-${repoId}-pr-${prId}${sectionPart}-commit-${this.commitHash}-section-${this.section}-directory-${fullPath}`,
-        );
-        return `repo-${repoId}-pr-${prId}${sectionPart}-commit-${this.commitHash}-section-${this.section}-directory-${fullPath}`;
+        const dirPath = this.directoryData.fullPath;
+
+        if (this.directoryData.treeHash) {
+            return `pr-${prId}-repo-${repoId}-${this.section}-${this.commitHash || 'main'}-tree-${this.directoryData.treeHash}`;
+        }
+        return `pr-${prId}-repo-${repoId}-${this.section}-${this.commitHash || 'main'}-directory-${dirPath}`;
+    }
+
+    async fetchGitHashes(): Promise<void> {
+        if (this.pr?.workspaceRepo) {
+            const workspaceRepo = Container.bitbucketContext.getRepository(
+                vscode.Uri.parse(this.pr.workspaceRepo.rootUri),
+            );
+            if (workspaceRepo) {
+                try {
+                    // Get the Git extension API
+                    const extension = vscode.extensions.getExtension('vscode.git');
+                    if (!extension) {
+                        throw new Error('Git extension not found');
+                    }
+                    if (!extension.isActive) {
+                        await extension.activate();
+                    }
+                    const gitApi = extension.exports.getAPI(1);
+                    // Find the VS Code repository instance
+                    const repository = gitApi.repositories.find(
+                        (repo: WorkspaceRepo) => repo.rootUri.toString() === workspaceRepo.rootUri,
+                    );
+                    if (repository) {
+                        const result = await repository.exec([
+                            'rev-parse',
+                            `${this.commitHash || this.pr.data.source!.commitHash}:${this.directoryData.fullPath}`,
+                        ]);
+                        this.directoryData.treeHash = result.stdout.trim();
+                    }
+                } catch (e) {
+                    Logger.debug('Error getting Git tree hash:', e);
+                }
+            }
+        }
     }
 
     private areAllChildrenChecked(): boolean {
         const allFilesChecked = this.directoryData.files.every((file) => {
-            const fileNode = new PullRequestFilesNode(file, this.section, this.commitHash);
+            const fileNode = new PullRequestFilesNode(file, this.section, this.commitHash, this.pr);
             return fileNode.checked;
         });
 
@@ -52,7 +87,7 @@ export class DirectoryNode extends AbstractBaseNode {
         if (this._isDirectClick) {
             Logger.debug('Propagating state to children');
             this.directoryData.files.forEach((file) => {
-                const fileNode = new PullRequestFilesNode(file, this.section, this.commitHash);
+                const fileNode = new PullRequestFilesNode(file, this.section, this.commitHash, this.pr);
                 Container.checkboxStateManager.setChecked(fileNode.fileId, value);
             });
             this.directoryData.subdirs.forEach((subdir) => {
@@ -76,7 +111,9 @@ export class DirectoryNode extends AbstractBaseNode {
             Container.checkboxStateManager.setChecked(this.directoryId, allChecked);
         }
 
-        item.checkboxState = allChecked ? vscode.TreeItemCheckboxState.Checked : vscode.TreeItemCheckboxState.Unchecked;
+        item.checkboxState = this.checked
+            ? vscode.TreeItemCheckboxState.Checked
+            : vscode.TreeItemCheckboxState.Unchecked;
 
         item.id = this.directoryId;
         item.contextValue = `directory${allChecked ? '.checked' : ''}`;
@@ -86,12 +123,12 @@ export class DirectoryNode extends AbstractBaseNode {
 
     async getChildren(): Promise<AbstractBaseNode[]> {
         const fileNodes: AbstractBaseNode[] = this.directoryData.files.map(
-            (diffViewArg) => new PullRequestFilesNode(diffViewArg, this.section, this.commitHash),
+            (diffViewArg) => new PullRequestFilesNode(diffViewArg, this.section, this.commitHash, this.pr),
         );
 
         const directoryNodes: DirectoryNode[] = Array.from(
             this.directoryData.subdirs.values(),
-            (subdir) => new DirectoryNode(subdir, this.prUrl, this.section, this.commitHash),
+            (subdir) => new DirectoryNode(subdir, this.prUrl, this.section, this.commitHash, this.pr),
         );
 
         return [...fileNodes, ...directoryNodes];

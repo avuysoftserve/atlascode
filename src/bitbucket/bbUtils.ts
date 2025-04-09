@@ -4,6 +4,8 @@ import { bbAPIConnectivityError } from '../constants';
 import { Container } from '../container';
 import { Remote, Repository } from '../typings/git';
 import { BitbucketApi, BitbucketSite, WorkspaceRepo } from './model';
+import { Logger } from 'src/logger';
+import vscode from 'vscode';
 
 const bbServerRepoRegEx = new RegExp(/(?<type>users|projects)\/(?<owner>.*)\/repos/);
 
@@ -148,4 +150,53 @@ export function workspaceRepoFor(repository: Repository): WorkspaceRepo {
         mainSiteRemote: mainSiteRemote,
         siteRemotes: siteRemotes,
     };
+}
+
+async function getGitApi() {
+    const extension = vscode.extensions.getExtension('vscode.git');
+    if (!extension) {
+        throw new Error('Git extension not found');
+    }
+    if (!extension.isActive) {
+        await extension.activate();
+    }
+    return extension.exports.getAPI(1);
+}
+/**
+ * Gets the Git blob hash for a file in a specific commit
+ */
+export async function getBlobHash(repository: WorkspaceRepo, filePath: string, commitish: string): Promise<string> {
+    try {
+        const api = await getGitApi();
+        const vsCodeRepo = api.repositories.find(
+            (repo: Repository) => repo.rootUri.toString() === repository.rootUri.toString(),
+        );
+        if (!vsCodeRepo) {
+            throw new Error('Repository not found');
+        }
+        const result = await vsCodeRepo.exec(['rev-parse', `${commitish}:${filePath}`]);
+        return result.stdout.trim();
+    } catch (e) {
+        Logger.debug('Error getting blob hash:', e);
+        return '';
+    }
+}
+/**
+ * Gets the Git tree hash for a directory in a specific commit
+ */
+export async function getTreeHash(repository: WorkspaceRepo, dirPath: string, commitish: string): Promise<string> {
+    try {
+        const api = await getGitApi();
+        const vsCodeRepo = api.repositories.find(
+            (repo: Repository) => repo.rootUri.toString() === repository.rootUri.toString(),
+        );
+        if (!vsCodeRepo) {
+            throw new Error('Repository not found');
+        }
+        const result = await vsCodeRepo.exec(['rev-parse', `${commitish}:${dirPath}`]);
+        return result.stdout.trim();
+    } catch (e) {
+        Logger.debug('Error getting tree hash:', e);
+        return '';
+    }
 }

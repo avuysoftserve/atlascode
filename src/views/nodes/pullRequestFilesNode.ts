@@ -1,6 +1,6 @@
 import path from 'path';
 import * as vscode from 'vscode';
-import { FileStatus } from '../../bitbucket/model';
+import { FileStatus, PullRequest, WorkspaceRepo } from '../../bitbucket/model';
 import { Commands } from '../../commands';
 import { configuration } from '../../config/configuration';
 import { Resources } from '../../resources';
@@ -14,23 +14,57 @@ export class PullRequestFilesNode extends AbstractBaseNode {
     constructor(
         private diffViewData: DiffViewArgs,
         private section: 'files' | 'commits' = 'files',
-        private commitHash?: string, // Add this for commit-specific files
+        private commitHash?: string,
+        private pr?: PullRequest, // Add PR parameter
     ) {
         super();
     }
 
-    // Get unique identifier for this file
     get fileId(): string {
         const prUrl = this.diffViewData.fileDisplayData.prUrl;
         const prUrlPath = vscode.Uri.parse(prUrl).path;
         const prId = prUrlPath.slice(prUrlPath.lastIndexOf('/') + 1);
         const repoUrl = prUrl.slice(0, prUrl.indexOf('/pull-requests'));
         const repoId = repoUrl.slice(repoUrl.lastIndexOf('/') + 1);
-        const fileName = this.diffViewData.fileDisplayData.fileDisplayName;
-        // Include section and commit hash in the ID if it's in the commits section
-        const sectionPart = this.section === 'commits' ? `-commit-${this.commitHash || 'unknown'}` : '';
-        Logger.debug('FILE ID', `repo-${repoId}-pr-${prId}${sectionPart}-section-${this.section}-file-${fileName}`);
-        return `repo-${repoId}-pr-${prId}${sectionPart}-section-${this.section}-file-${fileName}`;
+        const filePath = this.diffViewData.fileDisplayData.fileDisplayName;
+
+        if (this.diffViewData.blobHash) {
+            return `pr-${prId}-repo-${repoId}-${this.section}-${this.commitHash || 'main'}-blob-${this.diffViewData.blobHash}`;
+        }
+        return `pr-${prId}-repo-${repoId}-${this.section}-${this.commitHash || 'main'}-file-${filePath}`;
+    }
+
+
+    async fetchGitHash(): Promise<void> {
+        if (this.pr?.workspaceRepo) {
+            const workspaceRepo = Container.bitbucketContext.getRepository(
+                vscode.Uri.parse(this.pr.workspaceRepo.rootUri),
+            );
+            if (workspaceRepo) {
+                try {
+                    const extension = vscode.extensions.getExtension('vscode.git');
+                    if (!extension) {
+                        throw new Error('Git extension not found');
+                    }
+                    if (!extension.isActive) {
+                        await extension.activate();
+                    }
+                    const gitApi = extension.exports.getAPI(1);
+                    const repository = gitApi.repositories.find(
+                        (repo: WorkspaceRepo) => repo.rootUri.toString() === workspaceRepo.rootUri,
+                    );
+                    if (repository) {
+                        const result = await repository.exec([
+                            'rev-parse',
+                            `${this.commitHash || this.pr.data.source!.commitHash}:${this.diffViewData.fileDisplayData.fileDisplayName}`,
+                        ]);
+                        this.diffViewData.blobHash = result.stdout.trim();
+                    }
+                } catch (e) {
+                    Logger.debug('Error getting Git blob hash:', e);
+                }
+            }
+        }
     }
 
     // Use the Container's checkbox manager

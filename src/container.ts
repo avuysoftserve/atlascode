@@ -539,6 +539,4 @@ export class Container {
     public static get checkboxStateManager() {
         return this._checkboxStateManager;
     }
-
-    // In the initialize method, after setting this._context = context;
 }
