@@ -75,6 +75,7 @@ import { Logger } from './logger';
 import { SearchJiraHelper } from './views/jira/searchJiraHelper';
 import { featureFlagClientInitializedEvent } from './analytics';
 import { openPullRequest } from './commands/bitbucket/pullRequest';
+import { CheckboxStateManager } from './views/nodes/checkBoxStateManager';
 
 const isDebuggingRegex = /^--(debug|inspect)\b(-brk\b|(?!-))=?/;
 const ConfigTargetKey = 'configurationTarget';
@@ -83,9 +84,12 @@ export class Container {
     private static _cancellationManager: CancellationManager;
     private static _commonMessageHandler: CommonActionMessageHandler;
     private static _bitbucketHelper: CheckoutHelper;
+    private static _checkboxStateManager: CheckboxStateManager;
 
     static async initialize(context: ExtensionContext, config: IConfig, version: string) {
         const analyticsEnv: string = this.isDebugging ? 'staging' : 'prod';
+
+        this._checkboxStateManager = new CheckboxStateManager(context);
 
         this._analyticsClient = analyticsClient({
             origin: 'desktop',
@@ -530,5 +534,9 @@ export class Container {
     private static _pmfStats: PmfStats;
     public static get pmfStats() {
         return this._pmfStats;
+    }
+
+    public static get checkboxStateManager() {
+        return this._checkboxStateManager;
     }
 }
