@@ -1109,8 +1109,7 @@ div[role='dialog'],
     border-color: var(--vscode-focusBorder) !important;
 }
 
-.ac-select__indicator,
-.ac-select__input {
+.ac-select__indicator {
     background: var(--vscode-editor-background) !important;
     color: var(--vscode-input-foreground) !important;
 }
@@ -1156,10 +1155,6 @@ div[role='dialog'],
 .ac-select__menu {
     border: 1px solid var(--vscode-focusBorder) !important;
     border-radius: 2px !important;
-}
-
-.ac-select__value-container {
-    padding: 0 !important;
 }
 
 .ac-select-container-control-on-hover .ac-select__control {
