@@ -24,7 +24,7 @@ const packages = Object.entries(packageJson['packages'])
 const packagePerVersion = {};
 packages.forEach((pkg) => {
     if (!packagePerVersion[pkg.name]) {
-        packagePerVersion[pkg.name] = [];
+        packagePerVersion[pkg.name] = [pkg.version];
     } else if (!packagePerVersion[pkg.name].includes(pkg.version)) {
         packagePerVersion[pkg.name].push(pkg.version);
     }

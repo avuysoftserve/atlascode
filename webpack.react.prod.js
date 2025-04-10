@@ -45,15 +45,6 @@ module.exports = {
                 },
             }),
         ],
-        splitChunks: {
-            cacheGroups: {
-                styles: {
-                    test: /\.css$/,
-                    chunks: 'all',
-                    enforce: true,
-                },
-            },
-        },
     },
     resolve: {
         // Add '.ts' and '.tsx' as resolvable extensions.
