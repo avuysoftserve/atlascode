@@ -87,7 +87,7 @@ export function PullRequestHeader({ state, controller }: PullRequestHeaderProps)
         <PageHeader
             disableTitleStyles={true}
             breadcrumbs={
-                <Breadcrumbs>
+                <Breadcrumbs testId="vscode-breadcrumbs">
                     <BreadcrumbsItem text={state.pr.site.ownerSlug} key="owner-slug" className={classes.breadcrumb} />
                     <BreadcrumbsItem text={state.pr.site.repoSlug} key="repo-slug" className={classes.breadcrumb} />
                 </Breadcrumbs>
