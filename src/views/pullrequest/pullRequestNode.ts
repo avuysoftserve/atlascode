@@ -18,7 +18,8 @@ import { CommitSectionNode } from '../nodes/commitSectionNode';
 import { RelatedBitbucketIssuesNode } from '../nodes/relatedBitbucketIssuesNode';
 import { RelatedIssuesNode } from '../nodes/relatedIssuesNode';
 import { SimpleNode } from '../nodes/simpleNode';
-import { createFileChangesNodes } from './diffViewHelper';
+import { createFileChangesNodes, PRDirectory } from './diffViewHelper';
+import { DirectoryNode } from '../nodes/directoryNode';
 
 export const PullRequestContextValue = 'pullrequest';
 export class PullRequestTitlesNode extends AbstractBaseNode {
@@ -97,11 +98,21 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         try {
             [files, comments] = await criticalPromise;
             fileChangedNodes = await createFileChangesNodes(this.pr, comments, files, [], []);
-            // update loadedChildren with critical data without commits
+
+            const filesDirectory: PRDirectory = {
+                name: 'Files',
+                fullPath: '',
+                files: [],
+                subdirs: new Map<string, PRDirectory>(),
+                prUrl: this.pr.data.url,
+            };
+            const rootDirectory = new DirectoryNode(filesDirectory, this.pr.data.url, 'files', undefined);
+
+            rootDirectory.getChildren = async () => fileChangedNodes;
             this.loadedChildren = [
                 new DescriptionNode(this.pr, this),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, [], true)] : []),
-                ...fileChangedNodes,
+                rootDirectory,
             ];
         } catch (error) {
             Logger.debug('error fetching pull request details', error);
@@ -126,13 +137,22 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
                 this.createRelatedBitbucketIssueNode(commits, allComments),
                 createFileChangesNodes(this.pr, allComments, fileDiffs, conflictedFiles, tasks),
             ]);
-            // update loadedChildren with additional data
+            const filesDirectory: PRDirectory = {
+                name: 'Files',
+                fullPath: '',
+                files: [],
+                subdirs: new Map<string, PRDirectory>(),
+                prUrl: this.pr.data.url,
+            };
+            const rootDirectory = new DirectoryNode(filesDirectory, this.pr.data.url, 'files');
+
+            rootDirectory.getChildren = async () => fileNodes;
             this.loadedChildren = [
                 new DescriptionNode(this.pr, this),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
                 ...jiraIssueNodes,
                 ...bbIssueNodes,
-                ...fileNodes,
+                rootDirectory,
             ];
         } catch (error) {
             Logger.debug('error fetching additional pull request details', error);

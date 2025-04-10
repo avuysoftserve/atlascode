@@ -12,15 +12,45 @@ import { DescriptionNode, PullRequestTitlesNode } from './pullrequest/pullReques
 import { PullRequestNodeDataProvider } from './pullRequestNodeDataProvider';
 import { RefreshTimer } from './RefreshTimer';
 import { BitbucketActivityMonitor } from './BitbucketActivityMonitor';
+import { PullRequestFilesNode } from './nodes/pullRequestFilesNode';
+import { DirectoryNode } from './nodes/directoryNode';
+import { TreeView } from 'vscode';
+import { AbstractBaseNode } from './nodes/abstractBaseNode';
 
 export abstract class BitbucketExplorer extends Explorer implements Disposable {
     private _disposable: Disposable;
 
     private monitor: BitbucketActivityMonitor | undefined;
     private _refreshTimer: RefreshTimer;
+    private _onDidChangeTreeData = new vscode.EventEmitter<AbstractBaseNode | undefined>();
+
+    protected newTreeView(): TreeView<AbstractBaseNode> | undefined {
+        super.newTreeView();
+        this.setupCheckboxHandling();
+        return this.treeView;
+    }
+
+    private setupCheckboxHandling(): void {
+        if (!this.treeView) {
+            return;
+        }
+        this.treeView.onDidChangeCheckboxState((event) => {
+            event.items.forEach(([item, state]) => {
+                const checked = state === vscode.TreeItemCheckboxState.Checked;
+                if (item instanceof PullRequestFilesNode || item instanceof DirectoryNode) {
+                    item.checked = checked;
+                    this._onDidChangeTreeData.fire(item);
+                }
+            });
+        });
+    }
 
     constructor(protected ctx: BitbucketContext) {
         super(() => this.dispose());
+
+        setTimeout(() => {
+            this.setupCheckboxHandling();
+        }, 50);
 
         Container.context.subscriptions.push(configuration.onDidChange(this._onConfigurationChanged, this));
 

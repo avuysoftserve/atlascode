@@ -16,13 +16,14 @@ import { Logger } from '../../logger';
 import { addTasksToCommentHierarchy } from '../../webview/common/pullRequestHelperActions';
 import { AbstractBaseNode } from '../nodes/abstractBaseNode';
 import { DirectoryNode } from '../nodes/directoryNode';
-import { PullRequestFilesNode } from '../nodes/pullRequestFilesNode';
 import { SimpleNode } from '../nodes/simpleNode';
 import { PullRequestNodeDataProvider } from '../pullRequestNodeDataProvider';
 import { PullRequestCommentController } from './prCommentController';
+import { PullRequestFilesNode } from '../nodes/pullRequestFilesNode';
 
 export interface DiffViewArgs {
     diffArgs: any[];
+    blobHash?: string;
     fileDisplayData: {
         prUrl: string;
         fileDisplayName: string;
@@ -34,8 +35,11 @@ export interface DiffViewArgs {
 
 export interface PRDirectory {
     name: string;
+    fullPath: string;
+    treeHash?: string;
     files: DiffViewArgs[];
     subdirs: Map<string, PRDirectory>;
+    prUrl: string;
 }
 
 export interface FileDiffQueryParams {
@@ -265,10 +269,11 @@ export async function createFileChangesNodes(
     conflictedFiles: string[],
     tasks: Task[],
     commitRange?: { lhs: string; rhs: string },
+    section?: 'files' | 'commits',
 ): Promise<AbstractBaseNode[]> {
     const allDiffData = await Promise.all(
         fileDiffs.map(async (fileDiff) => {
-            const commentsWithTasks = { ...allComments, data: addTasksToCommentHierarchy(allComments.data, tasks) }; //Comments need to be infused with tasks now because they are gathered separately
+            const commentsWithTasks = { ...allComments, data: addTasksToCommentHierarchy(allComments.data, tasks) };
             return await getArgsForDiffView(
                 commentsWithTasks,
                 fileDiff,
@@ -286,6 +291,8 @@ export async function createFileChangesNodes(
             name: '',
             files: [],
             subdirs: new Map<string, PRDirectory>(),
+            prUrl: allDiffData[0].fileDisplayData.prUrl,
+            fullPath: '',
         };
         allDiffData.forEach((diffData) => createdNestedFileStructure(diffData, rootDirectory));
         flattenFileStructure(rootDirectory);
@@ -293,16 +300,16 @@ export async function createFileChangesNodes(
         //While creating the directory, we actually put all the files/folders inside of a root directory. We now want to go one level in.
         const directoryNodes: DirectoryNode[] = Array.from(
             rootDirectory.subdirs.values(),
-            (subdir) => new DirectoryNode(subdir),
+            (subdir) => new DirectoryNode(subdir, rootDirectory.prUrl, section, commitRange?.rhs),
         );
         const childNodes: AbstractBaseNode[] = rootDirectory.files.map(
-            (diffViewArg) => new PullRequestFilesNode(diffViewArg),
+            (diffViewArg) => new PullRequestFilesNode(diffViewArg, section, commitRange?.rhs),
         );
         return childNodes.concat(directoryNodes);
     }
 
     const result: AbstractBaseNode[] = [];
-    result.push(...allDiffData.map((diffData) => new PullRequestFilesNode(diffData)));
+    result.push(...allDiffData.map((diffData) => new PullRequestFilesNode(diffData, section, commitRange?.rhs)));
     if (allComments.next) {
         result.push(
             new SimpleNode(
@@ -319,16 +326,21 @@ function createdNestedFileStructure(diffViewData: DiffViewArgs, directory: PRDir
     //If we just have a file, the dirName will be '.', but we don't want to tuck that in the '.' directory, so there's a ternary operation to deal with that
     const splitFileName = [...(dirName === '.' ? [] : dirName.split('/')), baseName];
     let currentDirectory = directory;
+    let currentPath = '';
+
     for (let i = 0; i < splitFileName.length; i++) {
         if (i === splitFileName.length - 1) {
             currentDirectory.files.push(diffViewData); //The last name in the path is the name of the file, so we've reached the end of the file tree
         } else {
             //Traverse the file tree, and if a folder doesn't exist, add it
+            currentPath = currentPath ? `${currentPath}/${dirName}` : dirName;
             if (!currentDirectory.subdirs.has(splitFileName[i])) {
                 currentDirectory.subdirs.set(splitFileName[i], {
                     name: splitFileName[i],
                     files: [],
                     subdirs: new Map<string, PRDirectory>(),
+                    prUrl: directory.prUrl,
+                    fullPath: currentPath,
                 });
             }
             currentDirectory = currentDirectory.subdirs.get(splitFileName[i])!;
