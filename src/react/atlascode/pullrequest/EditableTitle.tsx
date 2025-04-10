@@ -2,8 +2,8 @@ import InlineEdit from '@atlaskit/inline-edit';
 import Textfield from '@atlaskit/textfield';
 import { Theme } from '@atlaskit/theme/dist/types/types';
 import { makeStyles } from '@material-ui/core';
+import DomPurify from 'dompurify';
 import React, { useCallback, useEffect, useState } from 'react';
-import sanitizeHtml from 'sanitize-html';
 
 import RenderedTitle, { RenderedContent } from './RenderedTitle';
 
@@ -84,13 +84,7 @@ export const EditableTitle = ({ renderedTitle, isDisabled, isLoading, onUpdate }
                         autoFocus
                         onChange={handleOnChange}
                         value={textFieldValue}
-                        css={{
-                            fontSize: '24px',
-                            fontWeight: 500,
-                            padding: '1px 0px 1px 0px',
-                            letterSpacing: '0px',
-                            height: 'inherit',
-                        }}
+                        testId="editable-title-textfield"
                     />
                 );
             }}
@@ -104,11 +98,14 @@ export const EditableTitle = ({ renderedTitle, isDisabled, isLoading, onUpdate }
                     // UGC needs to be escaped, this may not match server's sanitized text but is uncommon usage
                     // tags will always be escaped while attrs will not as this content is placed in span
                     // and won't be interpreted as HTML to render
-                    const sanitizedContent = sanitizeHtml(textFieldValue, {
-                        allowedTags: [],
-                        allowedAttributes: false,
-                        disallowedTagsMode: 'escape',
+                    const sanitizedContent = DomPurify.sanitize(textFieldValue, {
+                        ALLOWED_TAGS: [],
+                        ALLOWED_ATTR: [],
+                        RETURN_DOM: false,
+                        RETURN_DOM_FRAGMENT: false,
+                        RETURN_TRUSTED_TYPE: false,
                     });
+
                     renderedContent = {
                         ...renderedTitle,
                         raw: textFieldValue,

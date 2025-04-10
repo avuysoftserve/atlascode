@@ -343,6 +343,44 @@ const useStyles = makeStyles(
                 '.suggestion-item-list': { background: '#fff', border: '1px solid #999' },
                 '.suggestion-item': { padding: '5px' },
                 '.suggestion-item:before': { borderTop: '1px solid' },
+                '[data-testid="editable-title-textfield"]': {
+                    fontSize: '24px !important',
+                    fontWeight: '500 !important',
+                    padding: '4px 0px !important',
+                    letterSpacing: '0px !important',
+                    height: 'inherit !important',
+                },
+                '[data-testid="vscode-dropdown--trigger"]': {
+                    backgroundColor: 'var(--vscode-settings-textInputBackground)!important',
+                    ':hover': {
+                        backgroundColor: 'var(--vscode-editor-selectionHighlightBackground)!important',
+                    },
+                },
+                '[data-testid="vscode-dropdown-item"]': {
+                    background: 'var(--vscode-settings-textInputBackground)!important',
+                    color: 'var(--vscode-settings-textInputForeground)!important',
+                    ':hover': {
+                        background: 'var(--vscode-editor-selectionHighlightBackground) !important',
+                    },
+                },
+                '[data-testid="vscode-breadcrumbs"]': {
+                    '*': {
+                        'background-color': 'transparent !important',
+                    },
+                },
+                '[.ac-inputField::placeholder': {
+                    color: 'var(--vscode-input-placeholderForeground) !important',
+                },
+                '.rendered-description': {
+                    ':hover': {
+                        backgroundColor: 'var(--vscode-editor-selectionHighlightBackground)!important',
+                        cursor: 'pointer !important',
+                    },
+                    paddingLeft: 0,
+                    paddingBottom: '4px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                },
             },
         }) as const,
 );
