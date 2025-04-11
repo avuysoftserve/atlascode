@@ -33,6 +33,7 @@ const routes: Record<string, any> = {
         () =>
             import(/* webpackChunkName: "createBitbucketIssuePageV2" */ './atlascode/bbissue/CreateBitbucketIssuePage'),
     ),
+    welcomePageV2: React.lazy(() => import(/* webpackChunkName: "welcomePageV2" */ './atlascode/welcome/Welcome')),
     startWorkPageV2: React.lazy(
         () => import(/* webpackChunkName: "startWorkPageV2" */ './atlascode/startwork/StartWorkPage'),
     ),
