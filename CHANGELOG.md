@@ -1,6 +1,11 @@
 ## What's new in 3.4.25
 
+### Improvements
+
+- The 'Release notes' button on the update notification now lands on the vscode markeplace page for Atlascode, Changelog tab.
+
 ### Bug fixes
+
 - Some Jira issues weren't loading due to poor handling of missing fields. 
 
 ## What's new in 3.4.24
