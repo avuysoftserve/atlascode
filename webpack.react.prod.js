@@ -98,6 +98,8 @@ module.exports = {
             'process.env.ATLASCODE_EXP_OVERRIDES_BOOL': JSON.stringify(process.env.ATLASCODE_EXP_OVERRIDES_BOOL),
             'process.env.ATLASCODE_EXP_OVERRIDES_STRING': JSON.stringify(process.env.ATLASCODE_EXP_OVERRIDES_STRING),
             'process.env.CI': JSON.stringify(process.env.CI),
+            'process.env.ATLASCODE_STATSIG_SDK_KEY': JSON.stringify(process.env.ATLASCODE_STATSIG_SDK_KEY),
+            'process.env.ATLASCODE_STATSIG_TARGET_APP': JSON.stringify(process.env.ATLASCODE_STATSIG_TARGET_APP),
         }),
     ],
     performance: {

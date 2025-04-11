@@ -33,8 +33,8 @@ import { Logger } from './logger';
 import { Pipeline } from './pipelines/model';
 import { SiteManager } from './siteManager';
 import { AtlascodeUriHandler } from './uriHandler';
-import { LegacyAtlascodeUriHandler, ONBOARDING_URL, SETTINGS_URL } from './uriHandler/legacyUriHandler';
-import { Experiments, FeatureFlagClient, FeatureFlagClientInitError, Features } from './util/featureFlags';
+import { ONBOARDING_URL, SETTINGS_URL } from './uriHandler/legacyUriHandler';
+import { FeatureFlagClient, FeatureFlagClientInitError, Features } from './util/featureFlags';
 import { OnlineDetector } from './util/online';
 import { AuthStatusBar } from './views/authStatusBar';
 import { HelpExplorer } from './views/HelpExplorer';
@@ -202,8 +202,8 @@ export class Container {
             });
         }
 
-        FeatureFlagClient.checkExperimentStringValueWithInstrumentation(Experiments.AtlascodeAA);
-        FeatureFlagClient.checkGateValueWithInstrumentation(Features.NoOpFeature);
+        // FeatureFlagClient.checkExperimentValue(Experiments.AtlascodeAA);
+        FeatureFlagClient.checkGate(Features.Test);
 
         this.initializeUriHandler(context, this._analyticsApi, this._bitbucketHelper);
 
@@ -230,12 +230,12 @@ export class Container {
         analyticsApi: VSCAnalyticsApi,
         bitbucketHelper: CheckoutHelper,
     ) {
-        if (FeatureFlagClient.checkGate(Features.EnableNewUriHandler)) {
-            Logger.debug('Using new URI handler');
-            context.subscriptions.push(AtlascodeUriHandler.create(analyticsApi, bitbucketHelper));
-        } else {
-            context.subscriptions.push(new LegacyAtlascodeUriHandler(analyticsApi, bitbucketHelper));
-        }
+        // if (FeatureFlagClient.checkGate(Features.EnableNewUriHandler)) {
+        Logger.debug('Using new URI handler');
+        context.subscriptions.push(AtlascodeUriHandler.create(analyticsApi, bitbucketHelper));
+        // } else {
+        //     context.subscriptions.push(new LegacyAtlascodeUriHandler(analyticsApi, bitbucketHelper));
+        // }
     }
 
     static initializeBitbucket(bbCtx: BitbucketContext) {

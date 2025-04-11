@@ -1487,6 +1487,7 @@
         "@atlaskit/tokens": "^3.3.2",
         "@atlaskit/tooltip": "^17.5.1",
         "@atlaskit/width-detector": "^3.0.6",
+        "@atlassian/feature-gate-node-client-standalone": "^3.8.0",
         "@atlassianlabs/guipi-core-components": "^0.1.2",
         "@atlassianlabs/guipi-core-controller": "^0.1.2",
         "@atlassianlabs/guipi-jira-components": "^0.1.2",

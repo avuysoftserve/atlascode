@@ -1,47 +1,47 @@
 name: Build
 
 on:
-  push:
-    branches:
-      - '**'
+    push:
+        branches:
+            - '**'
 
 jobs:
+    build:
+        runs-on: ubuntu-latest
 
-  build:
-
-    runs-on: ubuntu-latest
-
-    env:
-      ATLASCODE_FX3_API_KEY: ${{ secrets.ATLASCODE_FX3_API_KEY }}
-      ATLASCODE_FX3_ENVIRONMENT: ${{ vars.ATLASCODE_FX3_ENVIRONMENT }}
-      ATLASCODE_FX3_TARGET_APP: ${{ vars.ATLASCODE_FX3_TARGET_APP }}
-      ATLASCODE_FX3_TIMEOUT: ${{ vars.ATLASCODE_FX3_TIMEOUT }}
-
-    steps:
-
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run linter
-        run: npm run lint
-
-      - name: Run unit tests
-        run: npm run test
-
-      - name: Fetch E2E image
-        run: |
-          docker pull ghcr.io/atlassian/atlascode-e2e:latest
-          docker tag ghcr.io/atlassian/atlascode-e2e:latest atlascode-e2e
-
-      - name: Run E2E tests
         env:
-            ATLASCODE_TEST_USER_API_TOKEN: ${{ secrets.ATLASCODE_TEST_USER_API_TOKEN }}
-        run: npm run test:e2e:docker
+            ATLASCODE_FX3_API_KEY: ${{ secrets.ATLASCODE_FX3_API_KEY }}
+            ATLASCODE_FX3_ENVIRONMENT: ${{ vars.ATLASCODE_FX3_ENVIRONMENT }}
+            ATLASCODE_FX3_TARGET_APP: ${{ vars.ATLASCODE_FX3_TARGET_APP }}
+            ATLASCODE_FX3_TIMEOUT: ${{ vars.ATLASCODE_FX3_TIMEOUT }}
+
+            ATLASCODE_STATSIG_TARGET_APP: ${{ vars.ATLASCODE_STATSIG_TARGET_APP }}
+            ATLASCODE_STATSIG_SDK_KEY: ${{ secrets.ATLASCODE_STATSIG_SDK_KEY }}
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm install
+
+            - name: Run linter
+              run: npm run lint
+
+            - name: Run unit tests
+              run: npm run test
+
+            - name: Fetch E2E image
+              run: |
+                  docker pull ghcr.io/atlassian/atlascode-e2e:latest
+                  docker tag ghcr.io/atlassian/atlascode-e2e:latest atlascode-e2e
+
+            - name: Run E2E tests
+              env:
+                  ATLASCODE_TEST_USER_API_TOKEN: ${{ secrets.ATLASCODE_TEST_USER_API_TOKEN }}
+              run: npm run test:e2e:docker

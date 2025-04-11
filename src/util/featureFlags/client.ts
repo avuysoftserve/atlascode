@@ -1,4 +1,8 @@
-import FeatureGates, { FeatureGateEnvironment, Identifiers } from '@atlaskit/feature-gate-js-client';
+import FeatureGates, {
+    EnvironmentTier,
+    Identifiers,
+    IFeatureGatesUser,
+} from '@atlassian/feature-gate-node-client-standalone';
 
 import {
     ClientInitializedErrorType,
@@ -23,21 +27,21 @@ export class FeatureFlagClientInitError {
 
 export abstract class FeatureFlagClient {
     private static analyticsClient: AnalyticsClient;
-
+    private static featureGatesInstance: FeatureGates;
     private static featureGateOverrides: FeatureGateValues;
     private static experimentValueOverride: ExperimentGateValues;
-
+    private static identifiers: Identifiers;
+    private static initialized = false;
     public static async initialize(options: FeatureFlagClientOptions): Promise<void> {
         this.initializeOverrides();
 
         this.analyticsClient = options.analyticsClient;
-
-        const targetApp = process.env.ATLASCODE_FX3_TARGET_APP;
-        const environment = process.env.ATLASCODE_FX3_ENVIRONMENT as FeatureGateEnvironment;
-        const apiKey = process.env.ATLASCODE_FX3_API_KEY;
+        this.identifiers = options.identifiers;
+        const targetApp = process.env.ATLASCODE_STATSIG_TARGET_APP;
+        const environment = process.env.ATLASCODE_FX3_ENVIRONMENT as EnvironmentTier;
+        const sdkKey = process.env.ATLASCODE_STATSIG_SDK_KEY;
         const timeout = process.env.ATLASCODE_FX3_TIMEOUT;
-
-        if (!targetApp || !environment || !apiKey || !timeout) {
+        if (!targetApp || !environment || !sdkKey || !timeout) {
             return Promise.reject(
                 new FeatureFlagClientInitError(ClientInitializedErrorType.Skipped, 'env data not set'),
             );
@@ -52,15 +56,12 @@ export abstract class FeatureFlagClient {
         Logger.debug(`FeatureGates: initializing, target: ${targetApp}, environment: ${environment}`);
 
         try {
-            await FeatureGates.initialize(
-                {
-                    apiKey,
-                    environment,
-                    targetApp,
-                    fetchTimeoutMs: Number.parseInt(timeout),
-                },
-                options.identifiers,
-            );
+            this.featureGatesInstance = await FeatureGates.initialize({
+                environmentTier: environment,
+                targetApp,
+                serverSecretKey: sdkKey,
+            });
+            this.initialized = true;
         } catch (err) {
             return Promise.reject(new FeatureFlagClientInitError(ClientInitializedErrorType.Failed, err));
         }
@@ -128,13 +129,13 @@ export abstract class FeatureFlagClient {
         if (this.featureGateOverrides.hasOwnProperty(gate)) {
             return this.featureGateOverrides[gate];
         }
-
+        const user: IFeatureGatesUser = {
+            identifiers: { analyticsAnonymousId: this.identifiers.analyticsAnonymousId || '' },
+        };
         let gateValue = false;
-        if (FeatureGates.initializeCompleted()) {
-            // FeatureGates.checkGate returns false if any errors
-            gateValue = FeatureGates.checkGate(gate, { fireGateExposure: true });
+        if (this.initializeCompleted()) {
+            gateValue = this.featureGatesInstance.checkGate(user, gate);
         }
-
         Logger.debug(`FeatureGates ${gate} -> ${gateValue}`);
         return gateValue;
     }
@@ -148,18 +149,18 @@ export abstract class FeatureFlagClient {
         if (this.experimentValueOverride.hasOwnProperty(experiment)) {
             return this.experimentValueOverride[experiment];
         }
-
+        const user: IFeatureGatesUser = {
+            identifiers: { analyticsAnonymousId: this.identifiers.analyticsAnonymousId || '' },
+        };
         const experimentGate = ExperimentGates[experiment];
         let gateValue = experimentGate.defaultValue;
-        if (FeatureGates.initializeCompleted()) {
-            gateValue = FeatureGates.getExperimentValue(
-                experiment,
-                experimentGate.parameter,
-                experimentGate.defaultValue,
-                { fireExperimentExposure: true },
-            );
+        if (this.initializeCompleted()) {
+            gateValue = this.featureGatesInstance.getExperimentValue(user, {
+                name: experiment,
+                parameter: experimentGate.parameter,
+                defaultValue: experimentGate.defaultValue,
+            });
         }
-
         Logger.debug(`Experiment ${experiment} -> ${gateValue}`);
         return gateValue;
     }
@@ -172,11 +173,13 @@ export abstract class FeatureFlagClient {
             });
             return value;
         }
-
+        const user: IFeatureGatesUser = {
+            identifiers: { analyticsAnonymousId: this.identifiers.analyticsAnonymousId || '' },
+        };
         let gateValue = false;
-        if (FeatureGates.initializeCompleted()) {
+        if (this.initializeCompleted()) {
             // FeatureGates.checkGate returns false if any errors
-            gateValue = FeatureGates.checkGate(gate, { fireGateExposure: true });
+            gateValue = this.featureGatesInstance.checkGate(user, gate);
             featureGateExposureBoolEvent(gate, true, gateValue, 0).then((e) => {
                 this.analyticsClient.sendTrackEvent(e);
             });
@@ -206,16 +209,17 @@ export abstract class FeatureFlagClient {
             });
             return value;
         }
-
+        const user: IFeatureGatesUser = {
+            identifiers: { analyticsAnonymousId: this.identifiers.analyticsAnonymousId || '' },
+        };
         const experimentGate = ExperimentGates[experiment];
         let gateValue = experimentGate.defaultValue as string;
-        if (FeatureGates.initializeCompleted()) {
-            gateValue = FeatureGates.getExperimentValue(
-                experiment,
-                experimentGate.parameter,
-                experimentGate.defaultValue,
-                { fireExperimentExposure: true },
-            );
+        if (this.initializeCompleted()) {
+            gateValue = this.featureGatesInstance.getExperimentValue(user, {
+                name: experiment,
+                parameter: experimentGate.parameter,
+                defaultValue: experimentGate.defaultValue,
+            });
 
             if (gateValue === experimentGate.defaultValue) {
                 featureGateExposureStringEvent(experiment, false, gateValue, 4).then((e) => {
@@ -237,6 +241,10 @@ export abstract class FeatureFlagClient {
     }
 
     static dispose() {
-        FeatureGates.shutdownStatsig();
+        this.featureGatesInstance.shutdown();
+    }
+
+    static initializeCompleted() {
+        return this.initialized;
     }
 }

@@ -20,19 +20,16 @@ jest.mock('./features', () => {
     };
 });
 
-jest.mock('@atlaskit/feature-gate-js-client', () => {
+jest.mock('@atlassian/feature-gate-node-client-standalone', () => {
     return {
-        ...jest.requireActual('@atlaskit/feature-gate-js-client'),
+        ...jest.requireActual('@atlassian/feature-gate-node-client-standalone'),
         default: {
             initialize: () => Promise.resolve(),
-            initializeCompleted: () => false,
-            checkGate: () => false,
-            getExperimentValue: (key: string) => MockExperimentGates[key].defaultValue,
         },
     };
 });
 
-import FeatureGates from '@atlaskit/feature-gate-js-client';
+import FeatureGates, { IFeatureGatesUser } from '@atlassian/feature-gate-node-client-standalone';
 
 import { forceCastTo } from '../../../testsutil';
 import { ClientInitializedErrorType } from '../../analytics';
@@ -43,7 +40,7 @@ describe('FeatureFlagClient', () => {
     let analyticsClient: any;
     let options: FeatureFlagClientOptions;
     const originalEnv = process.env;
-
+    let mockFeatureGates: FeatureGates;
     beforeEach(() => {
         analyticsClient = {
             sendOperationalEvent: jest.fn(),
@@ -57,14 +54,19 @@ describe('FeatureFlagClient', () => {
         };
         process.env = {
             ...originalEnv,
-            ATLASCODE_FX3_TARGET_APP: 'some-app',
-            ATLASCODE_FX3_API_KEY: 'some-key',
             ATLASCODE_FX3_ENVIRONMENT: 'Production',
             ATLASCODE_FX3_TIMEOUT: '2000',
+            ATLASCODE_STATSIG_TARGET_APP: 'some-app',
+            ATLASCODE_STATSIG_SDK_KEY: 'some-key',
             ATLASCODE_FF_OVERRIDES: undefined,
             ATLASCODE_EXP_OVERRIDES_BOOL: undefined,
             ATLASCODE_EXP_OVERRIDES_STRING: undefined,
         };
+        mockFeatureGates = {
+            checkGate: jest.fn(),
+            getExperimentValue: jest.fn(),
+            initialize: jest.fn(),
+        } as unknown as FeatureGates;
     });
 
     afterEach(() => {
@@ -98,7 +100,7 @@ describe('FeatureFlagClient', () => {
 
         it('should catch an error when the feature flag client skipped initialization', async () => {
             jest.spyOn(FeatureGates, 'initialize');
-            process.env.ATLASCODE_FX3_API_KEY = '';
+            process.env.ATLASCODE_STATSIG_SDK_KEY = '';
 
             let error: FeatureFlagClientInitError = undefined!;
 
@@ -131,13 +133,13 @@ describe('FeatureFlagClient', () => {
         });
 
         it('checkGate returns what FeatureGates returns', async () => {
+            const mockedCheckGate = (user: IFeatureGatesUser, name: string) =>
+                MockedFeatureGates_Features[name] ?? false;
+
+            jest.spyOn(FeatureGates, 'initialize').mockReturnValue(Promise.resolve(mockFeatureGates));
+            jest.spyOn(FeatureFlagClient, 'initializeCompleted').mockReturnValue(true);
+            jest.spyOn(mockFeatureGates, 'checkGate').mockImplementation(mockedCheckGate);
             await FeatureFlagClient.initialize(options);
-
-            const mockedCheckGate = (name: string) => MockedFeatureGates_Features[name] ?? false;
-
-            jest.spyOn(FeatureGates, 'initializeCompleted').mockReturnValue(true);
-            jest.spyOn(FeatureGates, 'checkGate').mockImplementation(mockedCheckGate);
-
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('some-very-real-feature'))).toBeTruthy();
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('another-very-real-feature'))).toBeTruthy();
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('some-fake-feature'))).toBeFalsy();
@@ -146,45 +148,44 @@ describe('FeatureFlagClient', () => {
         it('if overrides are set, checkGate returns the overridden value', async () => {
             process.env.ATLASCODE_FF_OVERRIDES = `another-very-real-feature=false`;
 
+            const mockedCheckGate = (user: IFeatureGatesUser, name: string) =>
+                MockedFeatureGates_Features[name] ?? false;
+            jest.spyOn(FeatureGates, 'initialize').mockReturnValue(Promise.resolve(mockFeatureGates));
+            jest.spyOn(FeatureFlagClient, 'initializeCompleted').mockReturnValue(true);
+            jest.spyOn(mockFeatureGates, 'checkGate').mockImplementation(mockedCheckGate);
             await FeatureFlagClient.initialize(options);
-
-            const mockedCheckGate = (name: string) => MockedFeatureGates_Features[name] ?? false;
-
-            jest.spyOn(FeatureGates, 'initializeCompleted').mockReturnValue(true);
-            jest.spyOn(FeatureGates, 'checkGate').mockImplementation(mockedCheckGate);
-
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('some-very-real-feature'))).toBeTruthy();
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('another-very-real-feature'))).toBeFalsy();
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('some-fake-feature'))).toBeFalsy();
         });
 
         it('if FeatureGates is not initialized, checkGate always returns false', async () => {
+            jest.spyOn(FeatureGates, 'initialize').mockReturnValue(Promise.resolve(mockFeatureGates));
+            jest.spyOn(FeatureFlagClient, 'initializeCompleted').mockReturnValue(false);
+            jest.spyOn(mockFeatureGates, 'checkGate');
             await FeatureFlagClient.initialize(options);
-
-            jest.spyOn(FeatureGates, 'initializeCompleted').mockReturnValue(false);
-            jest.spyOn(FeatureGates, 'checkGate');
-
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('some-very-real-feature'))).toBeFalsy();
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('another-very-real-feature'))).toBeFalsy();
             expect(FeatureFlagClient.checkGate(forceCastTo<Features>('some-fake-feature'))).toBeFalsy();
 
-            expect(FeatureGates.checkGate).not.toHaveBeenCalled();
+            expect(mockFeatureGates.checkGate).not.toHaveBeenCalled();
         });
 
         it('checkExperimentValue returns what FeatureGates returns', async () => {
-            await FeatureFlagClient.initialize(options);
-
-            const mockedGetExperimentValue = (name: string, param: string, defaultValue: any) => {
-                const expData = MockExperimentGates[name];
-                if (!expData || expData.parameter !== param) {
-                    return undefined;
+            const mockedGetExperimentValue = (
+                user: IFeatureGatesUser,
+                params: { name: string; parameter: string; defaultValue: any },
+            ) => {
+                const expData = MockExperimentGates[params.name];
+                if (!expData || expData.parameter !== params.parameter) {
+                    return '';
                 }
                 return 'returned value';
             };
-
-            jest.spyOn(FeatureGates, 'initializeCompleted').mockReturnValue(true);
-            jest.spyOn(FeatureGates, 'getExperimentValue').mockImplementation(mockedGetExperimentValue);
-
+            jest.spyOn(FeatureGates, 'initialize').mockReturnValue(Promise.resolve(mockFeatureGates));
+            jest.spyOn(FeatureFlagClient, 'initializeCompleted').mockReturnValue(true);
+            jest.spyOn(mockFeatureGates, 'getExperimentValue').mockImplementation(mockedGetExperimentValue);
+            await FeatureFlagClient.initialize(options);
             expect(FeatureFlagClient.checkExperimentValue(forceCastTo<Experiments>('some-very-real-experiment'))).toBe(
                 'returned value',
             );
@@ -199,19 +200,21 @@ describe('FeatureFlagClient', () => {
         it('if overrides are set, getExperimentValue returns the overridden value', async () => {
             process.env.ATLASCODE_EXP_OVERRIDES_STRING = `another-exp-name=another value`;
 
-            await FeatureFlagClient.initialize(options);
-
-            const mockedGetExperimentValue = (name: string, param: string, defaultValue: any) => {
-                const expData = MockExperimentGates[name];
-                if (!expData || expData.parameter !== param) {
-                    return undefined;
+            const mockedGetExperimentValue = (
+                user: IFeatureGatesUser,
+                params: { name: string; parameter: string; defaultValue: any },
+            ) => {
+                const expData = MockExperimentGates[params.name];
+                if (!expData || expData.parameter !== params.parameter) {
+                    return '';
                 }
                 return 'returned value';
             };
+            jest.spyOn(FeatureGates, 'initialize').mockReturnValue(Promise.resolve(mockFeatureGates));
+            jest.spyOn(FeatureFlagClient, 'initializeCompleted').mockReturnValue(true);
+            jest.spyOn(mockFeatureGates, 'getExperimentValue').mockImplementation(mockedGetExperimentValue);
 
-            jest.spyOn(FeatureGates, 'initializeCompleted').mockReturnValue(true);
-            jest.spyOn(FeatureGates, 'getExperimentValue').mockImplementation(mockedGetExperimentValue);
-
+            await FeatureFlagClient.initialize(options);
             expect(FeatureFlagClient.checkExperimentValue(forceCastTo<Experiments>('some-very-real-experiment'))).toBe(
                 'returned value',
             );
@@ -224,11 +227,10 @@ describe('FeatureFlagClient', () => {
         });
 
         it('if FeatureGates is not initialized, getExperimentValue returns the default value', async () => {
+            jest.spyOn(FeatureGates, 'initialize').mockReturnValue(Promise.resolve(mockFeatureGates));
+            jest.spyOn(FeatureFlagClient, 'initializeCompleted').mockReturnValue(false);
+            jest.spyOn(mockFeatureGates, 'getExperimentValue');
             await FeatureFlagClient.initialize(options);
-
-            jest.spyOn(FeatureGates, 'initializeCompleted').mockReturnValue(false);
-            jest.spyOn(FeatureGates, 'getExperimentValue');
-
             expect(FeatureFlagClient.checkExperimentValue(forceCastTo<Experiments>('some-very-real-experiment'))).toBe(
                 'a default value',
             );
@@ -239,7 +241,7 @@ describe('FeatureFlagClient', () => {
                 FeatureFlagClient.checkExperimentValue(forceCastTo<Experiments>('one-more-exp-name')),
             ).toBeUndefined();
 
-            expect(FeatureGates.getExperimentValue).not.toHaveBeenCalled();
+            expect(mockFeatureGates.getExperimentValue).not.toHaveBeenCalled();
         });
     });
 });
