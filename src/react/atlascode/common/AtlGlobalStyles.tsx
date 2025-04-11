@@ -363,10 +363,8 @@ const useStyles = makeStyles(
                         background: 'var(--vscode-editor-selectionHighlightBackground) !important',
                     },
                 },
-                '[data-testid="vscode-breadcrumbs"]': {
-                    '*': {
-                        'background-color': 'transparent !important',
-                    },
+                '[data-testid="vscode-breadcrumbs"] *': {
+                    'background-color': 'transparent !important',
                 },
                 '[.ac-inputField::placeholder': {
                     color: 'var(--vscode-input-placeholderForeground) !important',
