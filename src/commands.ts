@@ -70,7 +70,6 @@ export enum Commands {
     ShowConfigPageFromExtensionContext = 'atlascode.extensionContext.showConfigPage',
     ShowJiraAuth = 'atlascode.showJiraAuth',
     ShowBitbucketAuth = 'atlascode.showBitbucketAuth',
-    ShowWelcomePage = 'atlascode.showWelcomePage',
     ShowOnboardingPage = 'atlascode.showOnboardingPage',
     TestLogin = 'atlascode.testLogin',
     TestLogout = 'atlascode.testLogout',
@@ -172,7 +171,6 @@ export function registerCommands(vscodeContext: ExtensionContext) {
                 subSection: undefined,
             });
         }),
-        commands.registerCommand(Commands.ShowWelcomePage, () => Container.welcomeWebviewFactory.createOrShow()),
         commands.registerCommand(Commands.ShowOnboardingPage, () => Container.onboardingWebviewFactory.createOrShow()),
         commands.registerCommand(Commands.TestLogin, () => Container.testLogin()),
         commands.registerCommand(Commands.TestLogout, () => Container.testLogout()),

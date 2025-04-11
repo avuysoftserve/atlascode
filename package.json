@@ -85,7 +85,6 @@
         "mui:bitbucketIssuePage:light": "cross-env PAGETSX=\"bbissue/BitbucketIssuePage.tsx\" VIEW=\"bitbucketIssuePageV2\" THEME=\"light\" webpack-dev-server --open --config webpack.mui.webview.js",
         "mui:bitbucketIssuePage:dark": "cross-env PAGETSX=\"bbissue/BitbucketIssuePage.tsx\" VIEW=\"bitbucketIssuePageV2\" THEME=\"dark\" webpack-dev-server --open --config webpack.mui.webview.js",
         "mui:createBitbucketIssuePage:light": "cross-env PAGETSX=\"bbissue/CreateBitbucketIssuePage.tsx\" VIEW=\"createBitbucketIssuePageV2\" THEME=\"light\" webpack-dev-server --open --config webpack.mui.webview.js",
-        "mui:welcomePage:light": "cross-env  PAGETSX=\"welcome/Welcome.tsx\" VIEW=\"welcomePageV2\" THEME=\"light\" webpack-dev-server --open --config webpack.mui.webview.js",
         "mui:startWorkPage:dark": "cross-env PAGETSX=\"startwork/StartWorkPage.tsx\" VIEW=\"startWorkPageV2\" THEME=\"dark\" webpack-dev-server --open --config webpack.mui.webview.js",
         "mui:startWorkPage:light": "cross-env PAGETSX=\"startwork/StartWorkPage.tsx\" VIEW=\"startWorkPageV2\" THEME=\"light\" webpack-dev-server --open --config webpack.mui.webview.js",
         "mui:pullRequestDetailsPage:dark": "cross-env  PAGETSX=\"pullrequest/PullRequestDetailsPage.tsx\" VIEW=\"pullRequestDetailsPageV2\" THEME=\"dark\" webpack-dev-server --open --config webpack.mui.webview.js",
@@ -314,11 +313,6 @@
             {
                 "command": "atlascode.showBitbucketAuth",
                 "title": "Open Bitbucket Auth Settings",
-                "category": "Atlassian"
-            },
-            {
-                "command": "atlascode.showWelcomePage",
-                "title": "Open Welcome Page",
                 "category": "Atlassian"
             },
             {

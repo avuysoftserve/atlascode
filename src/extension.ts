@@ -145,7 +145,7 @@ async function showWelcomePage(version: string, previousVersion: string | undefi
             .showInformationMessage(`Jira and Bitbucket (Official) has been updated to v${version}`, 'Release notes')
             .then((userChoice) => {
                 if (userChoice === 'Release notes') {
-                    commands.executeCommand(Commands.ShowWelcomePage);
+                    commands.executeCommand('extension.open', 'atlassian.atlascode', 'changelog');
                 }
             });
     }

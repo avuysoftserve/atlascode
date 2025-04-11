@@ -25,11 +25,9 @@ import { OnboardingAction } from './lib/ipc/fromUI/onboarding';
 import { PipelineSummaryAction } from './lib/ipc/fromUI/pipelineSummary';
 import { PullRequestDetailsAction } from './lib/ipc/fromUI/pullRequestDetails';
 import { StartWorkAction } from './lib/ipc/fromUI/startWork';
-import { WelcomeAction } from './lib/ipc/fromUI/welcome';
 import { ConfigTarget } from './lib/ipc/models/config';
 import { SectionChangeMessage } from './lib/ipc/toUI/config';
 import { StartWorkIssueMessage } from './lib/ipc/toUI/startWork';
-import { WelcomeInitMessage } from './lib/ipc/toUI/welcome';
 import { CommonActionMessageHandler } from './lib/webview/controller/common/commonActionMessageHandler';
 import { Logger } from './logger';
 import { Pipeline } from './pipelines/model';
@@ -67,8 +65,6 @@ import { VSCPullRequestDetailsWebviewControllerFactory } from './webview/pullreq
 import { SingleWebview } from './webview/singleViewFactory';
 import { VSCStartWorkActionApi } from './webview/startwork/vscStartWorkActionApi';
 import { VSCStartWorkWebviewControllerFactory } from './webview/startwork/vscStartWorkWebviewControllerFactory';
-import { VSCWelcomeActionApi } from './webview/welcome/vscWelcomeActionApi';
-import { VSCWelcomeWebviewControllerFactory } from './webview/welcome/vscWelcomeWebviewControllerFactory';
 import { CreateIssueProblemsWebview } from './webviews/createIssueProblemsWebview';
 import { CreateIssueWebview } from './webviews/createIssueWebview';
 import { JiraIssueViewManager } from './webviews/jiraIssueViewManager';
@@ -146,12 +142,6 @@ export class Container {
             this.analyticsApi,
         );
 
-        const welcomeV2ViewFactory = new SingleWebview<WelcomeInitMessage, WelcomeAction>(
-            context.extensionPath,
-            new VSCWelcomeWebviewControllerFactory(new VSCWelcomeActionApi(), this._commonMessageHandler),
-            this._analyticsApi,
-        );
-
         const startWorkV2ViewFactory = new SingleWebview<StartWorkIssueMessage, StartWorkAction>(
             context.extensionPath,
             new VSCStartWorkWebviewControllerFactory(
@@ -174,7 +164,6 @@ export class Container {
 
         context.subscriptions.push((this._settingsWebviewFactory = settingsV2ViewFactory));
         context.subscriptions.push((this._onboardingWebviewFactory = onboardingV2ViewFactory));
-        context.subscriptions.push((this._welcomeWebviewFactory = welcomeV2ViewFactory));
         context.subscriptions.push((this._startWorkWebviewFactory = startWorkV2ViewFactory));
         context.subscriptions.push((this._createPullRequestWebviewFactory = createPullRequestV2ViewFactory));
 
@@ -409,11 +398,6 @@ export class Container {
     private static _pipelinesSummaryWebview: MultiWebview<Pipeline, PipelineSummaryAction>;
     public static get pipelinesSummaryWebview() {
         return this._pipelinesSummaryWebview;
-    }
-
-    private static _welcomeWebviewFactory: SingleWebview<WelcomeInitMessage, WelcomeAction>;
-    public static get welcomeWebviewFactory() {
-        return this._welcomeWebviewFactory;
     }
 
     private static _startWorkWebviewFactory: SingleWebview<StartWorkIssueMessage, StartWorkAction>;

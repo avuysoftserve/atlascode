@@ -3,7 +3,6 @@ export enum UIWSPort {
     Onboarding,
     BitbucketIssuePage,
     CreateBitbucketIssuePage,
-    WelcomePage,
     StartWork,
     PipelineSummary,
     PullRequestDetailsPage,
