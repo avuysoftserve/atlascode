@@ -20,12 +20,10 @@ import { RelatedIssuesNode } from '../nodes/relatedIssuesNode';
 import { SimpleNode } from '../nodes/simpleNode';
 import { createFileChangesNodes, PRDirectory } from './diffViewHelper';
 import { DirectoryNode } from '../nodes/directoryNode';
-// @ts-ignore TODO: fix noImplicitAny error here
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { Diff } from '@atlassian/bitkit-diff';
-// @ts-ignore TODO: fix noImplicitAny error here
-// eslint-disable-next-line import/no-extraneous-dependencies
-import diffParser from '@atlassian/diffparser';
+import { GitContentProvider } from '../gitContentProvider';
+import { Container } from 'src/container';
+import { PullRequestNodeDataProvider } from '../pullRequestNodeDataProvider';
+import * as crypto from 'crypto';
 
 export const PullRequestContextValue = 'pullrequest';
 export class PullRequestTitlesNode extends AbstractBaseNode {
@@ -176,24 +174,6 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         try {
             const bbApi = await clientForSite(this.pr.site);
 
-            // Parse diff and setup file index map
-            const fullDiff = await bbApi.pullrequests.getPullRequestDiff(this.pr);
-            const parsedDiffs = diffParser(fullDiff);
-            const fileIndexMap = new Map<string, string>();
-            parsedDiffs.forEach((diff: Diff) => {
-                if (diff.index?.length > 0) {
-                    const fileIndex = diff.index[0];
-                    const hash = fileIndex.includes('..') ? fileIndex.split('..')[1] : fileIndex;
-                    if (diff.from) {
-                        fileIndexMap.set(diff.from, hash);
-                    }
-                    if (diff.to) {
-                        fileIndexMap.set(diff.to, hash);
-                    }
-                }
-            });
-            this.parsedDiffCache.set('fileIndexMap', fileIndexMap);
-
             // Fetch data
             const criticalPromise = Promise.all([
                 bbApi.pullrequests.getChangedFiles(this.pr),
@@ -208,6 +188,29 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
             // Process critical data
             const [fileDiffs, allComments] = await this.criticalData(criticalPromise, rootDirectory);
             const commits = await commitsPromise;
+            const gitContentProvider = new GitContentProvider(Container.bitbucketContext);
+
+            const fileHashPromises = fileDiffs.map(async (fileDiff) => {
+                const rhsUri = vscode.Uri.parse(
+                    `${PullRequestNodeDataProvider.SCHEME}://${fileDiff.newPath || ''}`,
+                ).with({
+                    query: JSON.stringify({
+                        site: this.pr.site,
+                        commitHash: this.pr.data.source.commitHash,
+                        path: fileDiff.newPath,
+                    }),
+                });
+                const [rhsContent] = await Promise.all([
+                    gitContentProvider.provideTextDocumentContent(rhsUri, new vscode.CancellationTokenSource().token),
+                ]);
+                Logger.debug('Fetched file content', rhsContent);
+                const contentHash = crypto.createHash('md5').update(`${rhsContent}`).digest('hex');
+                return {
+                    ...fileDiff,
+                    contentHash,
+                };
+            });
+            const filesWithHashes = await Promise.all(fileHashPromises);
 
             // Update children list without recreating Files directory
             this.loadedChildren = [
@@ -218,7 +221,7 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
             this.refresh();
 
             // Process non-critical data
-            await this.nonCriticalData(nonCriticalPromise, fileDiffs, allComments, commits, rootDirectory);
+            await this.nonCriticalData(nonCriticalPromise, filesWithHashes, allComments, commits, rootDirectory);
         } catch (error) {
             Logger.debug('error fetching pull request details', error);
             this.loadedChildren = [new SimpleNode('⚠️ Error: fetching pull request details failed')];

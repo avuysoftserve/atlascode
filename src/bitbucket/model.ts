@@ -202,7 +202,7 @@ export interface FileDiff {
     oldPath?: string;
     newPath?: string;
     hasComments?: boolean;
-
+    contentHash?: string;
     hunkMeta?: {
         oldPathAdditions: number[];
         oldPathDeletions: number[];
@@ -388,7 +388,6 @@ export interface PullRequestApi {
         lineMeta?: 'ADDED' | 'REMOVED',
     ): Promise<Comment>;
     getFileContent(site: BitbucketSite, commitHash: string, path: string): Promise<string>;
-    getPullRequestDiff(pr: PullRequest): Promise<string>;
 }
 
 export interface RepositoriesApi {

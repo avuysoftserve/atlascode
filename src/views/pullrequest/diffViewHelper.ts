@@ -199,12 +199,7 @@ export async function getArgsForDiffView(
         fileDisplayName,
     ];
 
-    let blobHash: string | undefined;
-    const parsedCache = pr.titleNode?.getParsedCache?.();
-    const fileIndexMap = parsedCache?.get('fileIndexMap') || fileDisplayName;
-    if (fileIndexMap) {
-        blobHash = fileIndexMap.get(fileDiff.newPath || '') || fileIndexMap.get(fileDiff.oldPath || '');
-    }
+    const blobHash = fileDiff.contentHash;
 
     return {
         diffArgs: diffArgs,

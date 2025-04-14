@@ -272,15 +272,6 @@ export class CloudPullRequestApi implements PullRequestApi {
         }));
     }
 
-    async getPullRequestDiff(pr: PullRequest): Promise<string> {
-        const { ownerSlug, repoSlug } = pr.site;
-
-        const { data } = await this.client.getRaw(
-            `/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/diff`,
-        );
-        return data;
-    }
-
     private mapStatusWordsToFileStatus(status: string): FileStatus {
         if (status === 'added') {
             return FileStatus.ADDED;
