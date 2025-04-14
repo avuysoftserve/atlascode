@@ -12,14 +12,14 @@ const Created = (data: ItemData) => (
 const Comment = (data: ItemData) => <p style={{ display: 'inline' }}>{data.worklog.comment}</p>;
 const TimeSpent = (data: ItemData) => <p style={{ display: 'inline' }}>{data.worklog.timeSpent}</p>;
 const Author = (data: ItemData) => {
-    let avatar =
-        data.worklog.author.avatarUrls && data.worklog.author.avatarUrls['16x16']
-            ? data.worklog.author.avatarUrls['16x16']
+    const avatar =
+        data.worklog.author.avatarUrls && data.worklog.author.avatarUrls['48x48']
+            ? data.worklog.author.avatarUrls['48x48']
             : '';
     return (
         <div className="ac-flex">
-            <Avatar size="small" borderColor="var(--vscode-dropdown-foreground)!important" src={avatar} />
-            <span style={{ marginLeft: '4px' }}>{data.worklog.author.displayName}</span>
+            <Avatar size="small" borderColor="var(--vscode-editor-background)!important" src={avatar} />
+            <p style={{ marginLeft: '4px' }}>{data.worklog.author.displayName}</p>
         </div>
     );
 };

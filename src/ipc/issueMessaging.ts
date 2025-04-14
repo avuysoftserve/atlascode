@@ -6,7 +6,8 @@ import {
     FieldValues,
     IssueTypeUI,
     SelectFieldOptions,
-} from '@atlassianlabs/jira-pi-meta-models/ui-meta';
+} from '@atlassianlabs/jira-pi-meta-models';
+
 import { DetailedSiteInfo, emptySiteInfo } from '../atlclients/authInfo';
 import { PullRequestData } from '../bitbucket/model';
 import { HostErrorMessage, Message } from './messaging';
@@ -54,29 +55,6 @@ export interface IssueEditError extends HostErrorMessage {
 export function isIssueEditError(m: Message): m is IssueEditError {
     return (<IssueEditError>m).fieldValues !== undefined;
 }
-export interface FieldValueUpdate extends Message {
-    type: 'fieldValueUpdate';
-    fieldValues: FieldValues;
-}
-
-export interface EpicChildrenUpdate extends Message {
-    type: 'epicChildrenUpdate';
-    epicChildren: MinimalIssue<DetailedSiteInfo>[];
-}
-
-export interface PullRequestUpdate extends Message {
-    type: 'pullRequestUpdate';
-    recentPullRequests: PullRequestData[];
-}
-
-export interface CurrentUserUpdate extends Message {
-    type: 'currentUserUpdate';
-    currentUser: User;
-}
-
-export interface ProjectList extends Message {
-    availableProjects: Project[];
-}
 
 export interface LabelList extends Message {
     labels: any[];
@@ -88,16 +66,6 @@ export interface UserList extends Message {
 
 export interface IssueSuggestionsList extends Message {
     issues: any[];
-}
-
-export interface JqlOptionsList extends Message {
-    options: any[];
-    fieldId: string;
-}
-
-export interface SelectOptionsList extends Message {
-    options: any[];
-    fieldId: string;
 }
 
 export interface CreatedSelectOption extends Message {
@@ -119,15 +87,6 @@ export interface StartWorkOnIssueResult extends Message {
     type: 'startWorkOnIssueResult';
     successMessage?: string;
     error?: string;
-}
-
-export function isCreatedSelectOption(m: Message): m is CreatedSelectOption {
-    return (
-        m &&
-        (<CreatedSelectOption>m).fieldValues !== undefined &&
-        (<CreatedSelectOption>m).selectFieldOptions !== undefined &&
-        (<CreatedSelectOption>m).fieldKey !== undefined
-    );
 }
 
 export function isIssueCreated(m: Message): m is IssueCreated {

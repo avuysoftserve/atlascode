@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse, CancelToken } from 'axios';
+
 import { AuthInterceptor } from '../atlclients/authInterceptor';
 import { addCurlLogging } from '../atlclients/interceptors';
 import { AxiosUserAgent } from '../constants';
@@ -110,7 +111,7 @@ export class HTTPClient {
         let url = `${this.baseUrl}${urlSlug}`;
         url = HTTPClient.addQueryParams(url, queryParams);
 
-        const headers = {
+        const headers: Record<string, string> = {
             accept: 'application/octet-stream',
         };
 

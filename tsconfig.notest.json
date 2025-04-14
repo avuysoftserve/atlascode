@@ -3,12 +3,13 @@
         "baseUrl": ".",
         "outDir": "build/extension",
         "module": "esnext",
-        "target": "es6",
-        "lib": ["esnext", "dom"],
+        "target": "es2018",
+        "lib": ["ESNext", "dom"],
+        "alwaysStrict": true,
+        "resolveJsonModule": true,
         "skipLibCheck": true,
         "sourceMap": true,
         "allowJs": true,
-        "resolveJsonModule": true,
         "jsx": "react",
         "moduleResolution": "node",
         "rootDir": ".",
@@ -18,8 +19,9 @@
         "noImplicitThis": true,
         "noImplicitAny": true,
         "strictNullChecks": true,
-        "suppressImplicitAnyIndexErrors": true,
         "noUnusedLocals": true,
+        "noFallthroughCasesInSwitch": true,
+        "strictPropertyInitialization": true,
         "typeRoots": ["node_modules/@types", "src/typings/"]
     },
     "include": ["**/src/**/*", "webpack.*.js"],
@@ -41,6 +43,7 @@
         "__fixtures__",
         "**/__fixtures__",
         "test",
-        ".yalc"
+        ".yalc",
+        "e2e",
     ]
 }

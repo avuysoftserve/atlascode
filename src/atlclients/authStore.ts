@@ -1,32 +1,32 @@
+import crypto from 'crypto';
+import PQueue from 'p-queue';
+import { Disposable, Event, EventEmitter, version, window } from 'vscode';
+
+import { loggedOutEvent } from '../analytics';
+import { AnalyticsClient } from '../analytics-node-client/src/client.min.js';
+import { CommandContext, setCommandContext } from '../commandContext';
+import { Container } from '../container';
+import { Logger } from '../logger';
+import { keychain } from '../util/keychain';
 import {
     AuthChangeType,
     AuthInfo,
     AuthInfoEvent,
     AuthInfoState,
     DetailedSiteInfo,
+    emptyAuthInfo,
+    getSecretForAuthInfo,
+    isOAuthInfo,
     OAuthProvider,
+    oauthProviderForSite,
     Product,
     ProductBitbucket,
     ProductJira,
     RemoveAuthInfoEvent,
     UpdateAuthInfoEvent,
-    emptyAuthInfo,
-    getSecretForAuthInfo,
-    isOAuthInfo,
-    oauthProviderForSite,
 } from './authInfo';
-import { CommandContext, setCommandContext } from '../commandContext';
-import { Disposable, Event, EventEmitter, version, window } from 'vscode';
-
-import { AnalyticsClient } from '../analytics-node-client/src/client.min.js';
-import { Logger } from '../logger';
 import { OAuthRefesher } from './oauthRefresher';
-import PQueue from 'p-queue';
 import { Tokens } from './tokens';
-import crypto from 'crypto';
-import { keychain } from '../util/keychain';
-import { loggedOutEvent } from '../analytics';
-import { Container } from 'src/container';
 const keychainServiceNameV3 = version.endsWith('-insider') ? 'atlascode-insiders-authinfoV3' : 'atlascode-authinfoV3';
 
 enum Priority {
@@ -75,22 +75,6 @@ export class CredentialManager implements Disposable {
 
         const existingInfo = await this.getAuthInfo(site, false);
 
-        if (isOAuthInfo(existingInfo) && isOAuthInfo(info)) {
-            const effectiveExistingIat = existingInfo.iat ?? 0;
-            const effectiveNewIat = info.iat ?? 0;
-            if (effectiveExistingIat > effectiveNewIat) {
-                Logger.debug(`Not replacing credentials because the existing credentials have a later iat.`);
-                return;
-            }
-
-            if (effectiveExistingIat === effectiveNewIat && existingInfo.recievedAt > info.recievedAt) {
-                Logger.debug(
-                    `Not replacing credentials because the existing credentials have were received at a later time (despite having the same iat).`,
-                );
-                return;
-            }
-        }
-
         this._memStore.set(site.product.key, productAuths.set(site.credentialId, info));
 
         const hasNewInfo =
@@ -122,7 +106,7 @@ export class CredentialManager implements Disposable {
     ): Promise<AuthInfo | undefined> {
         Logger.debug(`Retrieving auth info for product: ${site.product.key} credentialID: ${site.credentialId}`);
         let foundInfo: AuthInfo | undefined = undefined;
-        let productAuths = this._memStore.get(site.product.key);
+        const productAuths = this._memStore.get(site.product.key);
 
         if (allowCache && productAuths && productAuths.has(site.credentialId)) {
             foundInfo = productAuths.get(site.credentialId);
@@ -275,7 +259,7 @@ export class CredentialManager implements Disposable {
         if (!authInfo) {
             return undefined;
         }
-        let info: AuthInfo = JSON.parse(authInfo);
+        const info: AuthInfo = JSON.parse(authInfo);
 
         // When in doubt, assume credentials are valid
         if (info.state === undefined) {
@@ -309,7 +293,7 @@ export class CredentialManager implements Disposable {
             return undefined;
         }
 
-        let info: AuthInfo = JSON.parse(authInfo);
+        const info: AuthInfo = JSON.parse(authInfo);
 
         // When in doubt, assume credentials are valid
         if (info.state === undefined) {
@@ -330,7 +314,7 @@ export class CredentialManager implements Disposable {
         Logger.debug(`refreshingAccessToken for ${site.baseApiUrl} credentialID: ${site.credentialId}`);
 
         const provider: OAuthProvider | undefined = oauthProviderForSite(site);
-        let newTokens = undefined;
+        const newTokens = undefined;
         if (provider && credentials) {
             const tokenResponse = await this._refresher.getNewTokens(provider, credentials.refresh);
             if (tokenResponse.tokens) {
@@ -356,7 +340,7 @@ export class CredentialManager implements Disposable {
      * Removes an auth item from both the in-memory store and the secretstorage.
      */
     public async removeAuthInfo(site: DetailedSiteInfo): Promise<boolean> {
-        let productAuths = this._memStore.get(site.product.key);
+        const productAuths = this._memStore.get(site.product.key);
         let wasKeyDeleted = false;
         let wasMemDeleted = false;
         if (productAuths) {
@@ -371,7 +355,7 @@ export class CredentialManager implements Disposable {
                 setCommandContext(cmdctx, false);
             }
 
-            let name = site.name;
+            const name = site.name;
 
             const removeEvent: RemoveAuthInfoEvent = {
                 type: AuthChangeType.Remove,

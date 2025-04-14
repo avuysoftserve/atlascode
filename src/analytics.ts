@@ -1,16 +1,14 @@
 import { ScreenEvent, TrackEvent, UIEvent } from './analytics-node-client/src/types';
+import { UIErrorInfo } from './analyticsTypes';
 import { DetailedSiteInfo, isEmptySiteInfo, Product, ProductJira, SiteInfo } from './atlclients/authInfo';
 import { BitbucketIssuesTreeViewId, PullRequestTreeViewId } from './constants';
 import { Container } from './container';
 
 // IMPORTANT
 // Make sure there is a corresponding event with the correct attributes in the Data Portal for any event created here.
-// Add your event to dataportal.yaml
-// Go to https://bitbucket.org/atlassianlabs/dataportal-cli/src/master/ and follow the instructions there.
-
-// Performing the above allows us to keep the analytics metatdata in source control. Therefore editing metadata directly
-// in the data-portal is discourage. However, the cannonical place for the metadata is
-// https://data-portal.us-east-1.prod.public.atl-paas.net/analytics/registry?filter=externalProductIntegrations
+// 1. Go to go/dataportal
+// 2. Open the Measure menu (on top) -> Event Registry
+// 3. Add or update the new/changed event
 
 export const Registry = {
     screen: {
@@ -20,7 +18,7 @@ export const Registry = {
 };
 
 class AnalyticsPlatform {
-    private static nodeJsPlatformMapping = {
+    private static nodeJsPlatformMapping: Record<NodeJS.Platform, string> = {
         aix: 'desktop',
         android: 'android',
         darwin: 'mac',
@@ -30,9 +28,11 @@ class AnalyticsPlatform {
         sunos: 'desktop',
         win32: 'windows',
         cygwin: 'windows',
+        haiku: 'unknown',
+        netbsd: 'unknown',
     };
 
-    static for(p: string): string {
+    static for(p: NodeJS.Platform): string {
         return this.nodeJsPlatformMapping[p] || 'unknown';
     }
 }
@@ -56,13 +56,13 @@ export async function launchedEvent(location: string): Promise<TrackEvent> {
 }
 
 export async function featureChangeEvent(featureId: string, enabled: boolean): Promise<TrackEvent> {
-    let action = enabled ? 'enabled' : 'disabled';
+    const action = enabled ? 'enabled' : 'disabled';
     return trackEvent(action, 'feature', { actionSubjectId: featureId });
 }
 
-export async function authenticatedEvent(site: DetailedSiteInfo): Promise<TrackEvent> {
+export async function authenticatedEvent(site: DetailedSiteInfo, isOnboarding?: boolean): Promise<TrackEvent> {
     return instanceTrackEvent(site, 'authenticated', 'atlascode', {
-        attributes: { machineId: Container.machineId, hostProduct: site.product.name },
+        attributes: { machineId: Container.machineId, hostProduct: site.product.name, onboarding: isOnboarding },
     });
 }
 
@@ -78,14 +78,68 @@ export async function loggedOutEvent(site: DetailedSiteInfo): Promise<TrackEvent
     });
 }
 
-// Feature Flag Events
+// Error/diagnostics events
 
-export async function featureFlagClientInitializedEvent(): Promise<TrackEvent> {
-    return trackEvent('initialized', 'featureFlagClient');
+function sanitizeStackTrace(stack?: string): string | undefined {
+    return stack ? stack.replace(/\/Users\/[^/]+\//g, '/Users/<user>/') : stack;
 }
 
-export async function featureFlagClientInitializationFailedEvent(): Promise<TrackEvent> {
-    return trackEvent('initializationFailed', 'featureFlagClient');
+export async function errorEvent(error: Error | string): Promise<TrackEvent> {
+    const attributes: { name: string; message: string; stack?: string } =
+        typeof error === 'string'
+            ? { name: 'Error', message: error }
+            : { name: error.name || 'Error', message: error.message, stack: sanitizeStackTrace(error.stack) };
+
+    return trackEvent('errorEvent', 'atlascode', { attributes });
+}
+
+// Feature Flag Events
+
+export const enum ClientInitializedErrorType {
+    // NoError = 0, // Don't expose this, only used internally
+    Failed = 1,
+    Skipped = 2,
+    IdMissing = 3,
+}
+
+export async function featureFlagClientInitializedEvent(success: true): Promise<TrackEvent>;
+export async function featureFlagClientInitializedEvent(
+    success: false,
+    errorType: ClientInitializedErrorType,
+    reason: string,
+): Promise<TrackEvent>;
+export async function featureFlagClientInitializedEvent(
+    success: boolean,
+    errorType?: ClientInitializedErrorType,
+    reason?: string,
+): Promise<TrackEvent> {
+    return trackEvent('initialized', 'featureFlagClient', {
+        attributes: { success, errorType: errorType ?? 0, reason },
+    });
+}
+
+// debugging event, meant to measure the exposure rate of a feature flag or an experiment
+export async function featureGateExposureBoolEvent(
+    ffName: string,
+    success: boolean,
+    value: boolean,
+    errorType: number,
+): Promise<TrackEvent> {
+    return trackEvent('gateExposureBool', 'featureFlagClient', {
+        attributes: { ffName, success, value, errorType },
+    });
+}
+
+// debugging event, meant to measure the exposure rate of a feature flag or an experiment
+export async function featureGateExposureStringEvent(
+    ffName: string,
+    success: boolean,
+    value: string,
+    errorType: number,
+): Promise<TrackEvent> {
+    return trackEvent('gateExposureString', 'featureFlagClient', {
+        attributes: { ffName, success, value, errorType },
+    });
 }
 
 // Jira issue events
@@ -106,8 +160,13 @@ export async function issueCommentEvent(site: DetailedSiteInfo): Promise<TrackEv
     return instanceTrackEvent(site, 'created', 'issueComment');
 }
 
-export async function issueWorkStartedEvent(site: DetailedSiteInfo): Promise<TrackEvent> {
-    return instanceTrackEvent(site, 'workStarted', 'issue');
+export async function issueWorkStartedEvent(
+    site: DetailedSiteInfo,
+    pushBranchToRemoteChecked: boolean,
+): Promise<TrackEvent> {
+    const attributesObject = instanceType({}, site);
+    attributesObject.attributes.pushBranchToRemoteChecked = pushBranchToRemoteChecked;
+    return instanceTrackEvent(site, 'workStarted', 'issue', attributesObject);
 }
 
 export async function issueUpdatedEvent(
@@ -163,7 +222,7 @@ export async function prCommentEvent(site: DetailedSiteInfo): Promise<TrackEvent
 }
 
 export async function prTaskEvent(site: DetailedSiteInfo, source: string): Promise<TrackEvent> {
-    let attributesObject: any = instanceType({}, site);
+    const attributesObject = instanceType({}, site);
     attributesObject.attributes.source = source;
     return trackEvent('created', 'pullRequestComment', attributesObject);
 }
@@ -254,6 +313,13 @@ export async function viewScreenEvent(
 }
 
 // UI Events
+
+export async function uiErrorEvent(errorInfo: UIErrorInfo): Promise<TrackEvent> {
+    const e = trackEvent('failedTest', 'ui', {
+        attributes: { ...errorInfo },
+    });
+    return e;
+}
 
 export async function bbIssuesPaginationEvent(): Promise<UIEvent> {
     const e = {
@@ -582,7 +648,7 @@ async function instanceTrackEvent(
     actionSubject: string,
     eventProps: any = {},
 ): Promise<TrackEvent> {
-    let event: TrackEvent =
+    const event: TrackEvent =
         site.isCloud && site.product.key === ProductJira.key
             ? await tenantTrackEvent(site.id, action, actionSubject, instanceType(eventProps, site))
             : await trackEvent(action, actionSubject, instanceType(eventProps, site));
@@ -615,7 +681,7 @@ async function tenantTrackEvent(
 }
 
 function event(action: string, actionSubject: string, attributes: any): any {
-    var event = {
+    const event = {
         origin: 'desktop',
         platform: AnalyticsPlatform.for(process.platform),
         action: action,
@@ -627,7 +693,7 @@ function event(action: string, actionSubject: string, attributes: any): any {
 
 function anyUserOrAnonymous<T>(e: Object): T {
     let newObj: Object;
-    const aaid = Container.siteManager.getFirstAAID();
+    const aaid = Container.siteManager?.getFirstAAID();
 
     if (aaid) {
         newObj = { ...e, ...{ userId: aaid, userIdType: 'atlassianAccount', anonymousId: Container.machineId } };
@@ -640,43 +706,36 @@ function anyUserOrAnonymous<T>(e: Object): T {
 
 function tenantOrNull<T>(e: Object, tenantId?: string): T {
     let tenantType: string | null = 'cloudId';
-    let newObj: Object;
 
     if (!tenantId) {
         tenantType = null;
     }
-    newObj = { ...e, ...{ tenantIdType: tenantType, tenantId: tenantId } };
 
+    const newObj: Object = { ...e, ...{ tenantIdType: tenantType, tenantId: tenantId } };
     return newObj as T;
 }
 
-function instanceType(eventProps: Object, site?: DetailedSiteInfo, product?: Product): Object {
-    let attrs: Object | undefined = undefined;
-    let newObj = eventProps;
-
+function instanceType(
+    eventProps: Record<string, any>,
+    site?: DetailedSiteInfo,
+    product?: Product,
+): Record<string, any> {
     if (product) {
-        attrs = { hostProduct: product.name };
+        eventProps.attributes = eventProps.attributes || {};
+        eventProps.attributes.hostProduct = product.name;
     }
 
     if (site && !isEmptySiteInfo(site)) {
-        const instanceType: string = site.isCloud ? 'cloud' : 'server';
-        attrs = { instanceType: instanceType, hostProduct: site.product.name };
+        eventProps.attributes = eventProps.attributes || {};
+        eventProps.attributes.instanceType = site.isCloud ? 'cloud' : 'server';
+        eventProps.attributes.hostProduct = site.product.name;
     }
 
-    if (attrs) {
-        newObj['attributes'] = { ...newObj['attributes'], ...attrs };
-    }
-
-    return newObj;
+    return eventProps;
 }
 
-function excludeFromActivity(eventProps: Object): Object {
-    let newObj = eventProps;
-
-    if (newObj['attributes']) {
-        newObj['attributes'] = { ...newObj['attributes'], ...{ excludeFromActivity: true } };
-    } else {
-        Object.assign(newObj, { attributes: { excludeFromActivity: true } });
-    }
-    return newObj;
+function excludeFromActivity(eventProps: Record<string, any>): Record<string, any> {
+    eventProps.attributes = eventProps.attributes || {};
+    eventProps.attributes.excludeFromActivity = true;
+    return eventProps;
 }

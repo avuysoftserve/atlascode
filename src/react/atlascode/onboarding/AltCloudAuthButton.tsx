@@ -1,6 +1,7 @@
 import { Button, Grid, lighten, makeStyles, Tooltip, Typography } from '@material-ui/core';
 import CloudIcon from '@material-ui/icons/Cloud';
 import React, { useCallback, useContext } from 'react';
+
 import { AuthInfoState, emptyUserInfo, Product, ProductJira } from '../../../atlclients/authInfo';
 import { OnboardingControllerContext } from './onboardingController';
 
@@ -53,7 +54,13 @@ export const AltCloudAuthButton: React.FunctionComponent<AltCloudAuthButtonProps
 
     return (
         <Tooltip title={'Opens a browser window to log in via OAuth'}>
-            <Button variant="contained" color="primary" className={classes.button} onClick={handleCloudProd}>
+            <Button
+                id="onboarding-cloud-button"
+                variant="contained"
+                color="primary"
+                className={classes.button}
+                onClick={handleCloudProd}
+            >
                 <Grid container direction="column">
                     <Grid container direction="row" alignItems="center" justify="center" spacing={3}>
                         <Grid item>

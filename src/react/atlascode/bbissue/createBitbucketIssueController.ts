@@ -1,22 +1,23 @@
 import { defaultStateGuard, ReducerAction } from '@atlassianlabs/guipi-core-controller';
 import React, { useCallback, useMemo, useReducer } from 'react';
+
+import { BitbucketIssue } from '../../../bitbucket/model';
 import { CommonActionType } from '../../../lib/ipc/fromUI/common';
-import { PostMessageFunc, useMessagingApi } from '../messagingApi';
+import {
+    CreateBitbucketIssueAction,
+    CreateBitbucketIssueActionType,
+    SubmitCreateRequestAction,
+} from '../../../lib/ipc/fromUI/createBitbucketIssue';
 import {
     CreateBitbucketIssueInitMessage,
-    emptyCreateBitbucketIssueInitMessage,
     CreateBitbucketIssueMessage,
     CreateBitbucketIssueMessageType,
     CreateBitbucketIssueResponse,
+    emptyCreateBitbucketIssueInitMessage,
     SubmitResponseMessage,
 } from '../../../lib/ipc/toUI/createBitbucketIssue';
-import {
-    CreateBitbucketIssueAction,
-    SubmitCreateRequestAction,
-    CreateBitbucketIssueActionType,
-} from '../../../lib/ipc/fromUI/createBitbucketIssue';
-import { BitbucketIssue } from '../../../bitbucket/model';
 import { ConnectionTimeout } from '../../../util/time';
+import { PostMessageFunc, useMessagingApi } from '../messagingApi';
 
 export interface CreateBitbucketIssueControllerApi {
     postMessage: PostMessageFunc<CreateBitbucketIssueAction>;
@@ -24,7 +25,7 @@ export interface CreateBitbucketIssueControllerApi {
     submit: (data: SubmitCreateRequestAction) => Promise<BitbucketIssue>;
 }
 
-export const emptyApi: CreateBitbucketIssueControllerApi = {
+const emptyApi: CreateBitbucketIssueControllerApi = {
     postMessage: () => {},
     refresh: () => {},
     submit: () => {
@@ -43,16 +44,14 @@ const emptyState: CreateBitbucketIssueState = {
     isSomethingLoading: false,
 };
 
-export enum CreateBitbucketIssueUIActionType {
+enum CreateBitbucketIssueUIActionType {
     Init = 'init',
     Loading = 'loading',
 }
 
-export type CreateBitbucketIssueUIAction =
+type CreateBitbucketIssueUIAction =
     | ReducerAction<CreateBitbucketIssueUIActionType.Init, { data: CreateBitbucketIssueInitMessage }>
     | ReducerAction<CreateBitbucketIssueUIActionType.Loading, {}>;
-
-export type BitbucketIssueChanges = { [key: string]: any };
 
 function reducer(state: CreateBitbucketIssueState, action: CreateBitbucketIssueUIAction): CreateBitbucketIssueState {
     switch (action.type) {

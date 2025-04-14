@@ -22,12 +22,13 @@ import {
     SelectFieldUI,
     UIType,
     ValueType,
-} from '@atlassianlabs/jira-pi-meta-models/ui-meta';
+} from '@atlassianlabs/jira-pi-meta-models';
 import { formatDistanceToNow } from 'date-fns';
 import debounce from 'lodash.debounce';
 import * as React from 'react';
 import EdiText, { EdiTextType } from 'react-editext';
 import uuid from 'uuid';
+
 import { DetailedSiteInfo, emptySiteInfo } from '../../../atlclients/authInfo';
 import { OpenJiraIssueAction } from '../../../ipc/issueActions';
 import {
@@ -277,16 +278,28 @@ export abstract class AbstractIssueEditorPage<
                         nonce,
                     );
                     resolve((listEvent as IssueSuggestionsList).issues);
-                } catch (e) {
+                } catch {
                     resolve([]);
                 }
             })();
         });
     };
 
+    /**
+     * AXON-49 This is a workaround for the suggested autocomplete URL
+     * (.../user/recommend/...) not being accessible
+     */
+    protected fixAutocompleteUrl(url: string): string {
+        if (url.includes('user/recommend')) {
+            url = url.replace('user/recommend', 'user/search') + '&query=';
+        }
+
+        return url;
+    }
+
     protected loadSelectOptionsForField = (field: SelectFieldUI, input: string): Promise<any[]> => {
         this.setState({ isSomethingLoading: true, loadingField: field.key });
-        return this.loadSelectOptions(input, field.autoCompleteUrl);
+        return this.loadSelectOptions(input, this.fixAutocompleteUrl(field.autoCompleteUrl));
     };
 
     protected loadSelectOptions = (input: string, url: string): Promise<any[]> => {
@@ -310,7 +323,7 @@ export abstract class AbstractIssueEditorPage<
 
                     this.setState({ isSomethingLoading: false });
                     resolve(listEvent.options);
-                } catch (e) {
+                } catch {
                     this.setState({ isSomethingLoading: false });
                     resolve([]);
                 }
@@ -352,7 +365,7 @@ export abstract class AbstractIssueEditorPage<
                             ...createEvent.selectFieldOptions,
                         },
                     });
-                } catch (e) {
+                } catch {
                     this.setState({ isSomethingLoading: false });
                 }
             })();
@@ -362,9 +375,9 @@ export abstract class AbstractIssueEditorPage<
     protected getInputMarkup(field: FieldUI, editmode: boolean = false): any {
         switch (field.uiType) {
             case UIType.Input: {
-                let validateFunc = this.getValidateFunction(field, editmode);
+                const validateFunc = this.getValidateFunction(field, editmode);
                 let validationFailMessage = '';
-                let valType = field.valueType;
+                const valType = field.valueType;
 
                 const defaultVal =
                     this.state.fieldValues[field.key] === undefined ? '' : this.state.fieldValues[field.key];
@@ -405,21 +418,7 @@ export abstract class AbstractIssueEditorPage<
                                 onSave={async (val: string) => {
                                     await this.handleInlineEdit(field, val);
                                 }}
-                                fetchImage={async (url: string) => {
-                                    const nonce = uuid.v4();
-                                    return (
-                                        await this.postMessageWithEventPromise(
-                                            {
-                                                action: 'getImage',
-                                                nonce: nonce,
-                                                url: url,
-                                            },
-                                            'getImageDone',
-                                            ConnectionTimeout,
-                                            nonce,
-                                        )
-                                    ).imgData;
-                                }}
+                                fetchImage={(img) => this.fetchImage(img)}
                             />
                         );
                     } else {
@@ -503,7 +502,7 @@ export abstract class AbstractIssueEditorPage<
             }
             case UIType.Date: {
                 let markup = <div></div>;
-                let validateFunc = this.getValidateFunction(field, editmode);
+                const validateFunc = this.getValidateFunction(field, editmode);
                 if (editmode) {
                     markup = (
                         <DatePicker
@@ -562,7 +561,7 @@ export abstract class AbstractIssueEditorPage<
             }
             case UIType.DateTime: {
                 let markup = <div></div>;
-                let validateFunc = this.getValidateFunction(field, editmode);
+                const validateFunc = this.getValidateFunction(field, editmode);
                 if (editmode) {
                     markup = (
                         <DateTimePicker
@@ -664,11 +663,11 @@ export abstract class AbstractIssueEditorPage<
                         />
                     );
                 } else {
-                    let validateFunc = field.required ? FieldValidators.validateSingleSelect : undefined;
+                    const validateFunc = field.required ? FieldValidators.validateSingleSelect : undefined;
                     return (
                         <React.Fragment>
                             <Field
-                                label={field.name}
+                                label={<span>{field.name}</span>}
                                 isRequired={field.required}
                                 id={`${field.key}.type`}
                                 name={`${field.key}.type`}
@@ -686,8 +685,8 @@ export abstract class AbstractIssueEditorPage<
                                                 {...fieldArgs.fieldProps}
                                                 isMulti={false}
                                                 isClearable={!field.required}
-                                                className="ac-select-container"
-                                                classNamePrefix="ac-select"
+                                                className="ac-form-select-container"
+                                                classNamePrefix="ac-form-select"
                                                 components={SelectFieldHelper.getComponentsForValueType(
                                                     ValueType.IssueLinks,
                                                 )}
@@ -723,8 +722,8 @@ export abstract class AbstractIssueEditorPage<
                                             {...fieldArgs.fieldProps}
                                             isClearable={true}
                                             isMulti={true}
-                                            className="ac-select-container"
-                                            classNamePrefix="ac-select"
+                                            className="ac-form-select-container"
+                                            classNamePrefix="ac-form-select"
                                             loadOptions={async (input: string) =>
                                                 await this.loadIssueOptions(field as SelectFieldUI, input)
                                             }
@@ -826,8 +825,6 @@ export abstract class AbstractIssueEditorPage<
 
                 const commonProps: any = {
                     isMulti: selectField.isMulti,
-                    className: 'ac-select-container',
-                    classNamePrefix: 'ac-select',
                     getOptionLabel: SelectFieldHelper.labelFuncForValueType(selectField.valueType),
                     getOptionValue: SelectFieldHelper.valueFuncForValueType(selectField.valueType),
                     components: SelectFieldHelper.getComponentsForValueType(selectField.valueType),
@@ -846,6 +843,8 @@ export abstract class AbstractIssueEditorPage<
                             return (
                                 <Select
                                     {...commonProps}
+                                    className="ac-select-container"
+                                    classNamePrefix="ac-select"
                                     isClearable={this.isClearableSelect(selectField)}
                                     options={this.state.selectFieldOptions[field.key]}
                                     isDisabled={this.state.isSomethingLoading}
@@ -859,7 +858,7 @@ export abstract class AbstractIssueEditorPage<
                         // create mode
                         return (
                             <Field
-                                label={field.name}
+                                label={<span>{field.name}</span>}
                                 isRequired={field.required}
                                 id={field.key}
                                 name={field.key}
@@ -876,6 +875,8 @@ export abstract class AbstractIssueEditorPage<
                                             <Select
                                                 {...fieldArgs.fieldProps}
                                                 {...commonProps}
+                                                className="ac-form-select-container"
+                                                classNamePrefix="ac-form-select"
                                                 isClearable={this.isClearableSelect(selectField)}
                                                 options={this.state.selectFieldOptions[field.key]}
                                                 isDisabled={this.state.isSomethingLoading}
@@ -899,6 +900,8 @@ export abstract class AbstractIssueEditorPage<
                             return (
                                 <CreatableSelect
                                     {...commonProps}
+                                    className="ac-select-container"
+                                    classNamePrefix="ac-select"
                                     placeholder="Type to create new option"
                                     createOptionPosition="first"
                                     value={this.state.fieldValues[field.key]}
@@ -921,7 +924,7 @@ export abstract class AbstractIssueEditorPage<
                         //create mode
                         return (
                             <Field
-                                label={field.name}
+                                label={<span>{field.name}</span>}
                                 isRequired={field.required}
                                 id={field.key}
                                 name={field.key}
@@ -938,6 +941,8 @@ export abstract class AbstractIssueEditorPage<
                                             <CreatableSelect
                                                 {...fieldArgs.fieldProps}
                                                 {...commonProps}
+                                                className="ac-form-select-container"
+                                                classNamePrefix="ac-form-select"
                                                 placeholder="Type to create new option"
                                                 createOptionPosition="first"
                                                 noOptionsMessage={(input: any) => 'Type to create new option'}
@@ -970,6 +975,8 @@ export abstract class AbstractIssueEditorPage<
                                 <AsyncSelect
                                     {...commonProps}
                                     placeholder="Type to search"
+                                    className="ac-select-container"
+                                    classNamePrefix="ac-select"
                                     noOptionsMessage={(input: any) => 'Type to search'}
                                     isClearable={this.isClearableSelect(selectField)}
                                     isDisabled={this.state.isSomethingLoading && this.state.loadingField !== field.key}
@@ -988,7 +995,7 @@ export abstract class AbstractIssueEditorPage<
                         //create mode
                         return (
                             <Field
-                                label={field.name}
+                                label={<span>{field.name}</span>}
                                 isRequired={field.required}
                                 id={field.key}
                                 name={field.key}
@@ -1005,6 +1012,8 @@ export abstract class AbstractIssueEditorPage<
                                             <AsyncSelect
                                                 {...fieldArgs.fieldProps}
                                                 {...commonProps}
+                                                className="ac-form-select-container"
+                                                classNamePrefix="ac-form-select"
                                                 placeholder="Type to search"
                                                 noOptionsMessage={(input: any) => 'Type to search'}
                                                 isDisabled={
@@ -1050,6 +1059,8 @@ export abstract class AbstractIssueEditorPage<
                             return (
                                 <AsyncCreatableSelect
                                     {...commonProps}
+                                    className="ac-select-container"
+                                    classNamePrefix="ac-select"
                                     placeholder="Type to search"
                                     createOptionPosition="first"
                                     value={this.state.fieldValues[field.key]}
@@ -1074,7 +1085,7 @@ export abstract class AbstractIssueEditorPage<
                         //create mode
                         return (
                             <Field
-                                label={field.name}
+                                label={<span>{field.name}</span>}
                                 isRequired={field.required}
                                 id={field.key}
                                 name={field.key}
@@ -1091,6 +1102,8 @@ export abstract class AbstractIssueEditorPage<
                                             <AsyncCreatableSelect
                                                 {...fieldArgs.fieldProps}
                                                 {...commonProps}
+                                                className="ac-form-select-container"
+                                                classNamePrefix="ac-form-select"
                                                 placeholder="Type to search"
                                                 createOptionPosition="first"
                                                 noOptionsMessage={(input: any) => 'Type to search'}
@@ -1154,7 +1167,10 @@ export abstract class AbstractIssueEditorPage<
                     );
                 }
 
-                let checkboxItems: any[] = [];
+                const legend: React.ReactElement = (
+                    <span style={{ color: 'var(--vscode-editor-foreground)!important' }}>{field.name}</span>
+                );
+                const checkboxItems: any[] = [];
                 const checkField = field as OptionableFieldUI;
                 checkField.allowedValues.forEach((value) => {
                     checkboxItems.push(
@@ -1174,7 +1190,7 @@ export abstract class AbstractIssueEditorPage<
                     );
                 });
 
-                return <Fieldset legend={field.name}>{checkboxItems}</Fieldset>;
+                return <Fieldset legend={legend}>{checkboxItems}</Fieldset>;
             }
             case UIType.Radio: {
                 if (editmode) {
@@ -1207,16 +1223,16 @@ export abstract class AbstractIssueEditorPage<
                     );
                 }
 
-                let radioItems: any[] = [];
+                const radioItems: any[] = [];
                 const radioField = field as OptionableFieldUI;
                 radioField.allowedValues.forEach((value) => {
                     radioItems.push({ name: field.key, label: value.value, value: value.id });
                 });
 
-                let validateFunc = field.required ? FieldValidators.validateMultiSelect : undefined;
+                const validateFunc = field.required ? FieldValidators.validateMultiSelect : undefined;
                 return (
                     <Field
-                        label={field.name}
+                        label={<span>{field.name}</span>}
                         isRequired={field.required}
                         id={field.key}
                         name={field.key}
@@ -1237,7 +1253,7 @@ export abstract class AbstractIssueEditorPage<
                 );
             }
             case UIType.Timetracking: {
-                let validateFunc = this.getValidateFunction(field, editmode);
+                const validateFunc = this.getValidateFunction(field, editmode);
                 if (editmode) {
                     const hasValue: boolean =
                         this.state.fieldValues[field.key] &&
@@ -1341,7 +1357,7 @@ export abstract class AbstractIssueEditorPage<
                 if (editmode) {
                     return <div>don't call getInputMarkup for worklog in editmode</div>;
                 }
-                let validateFunc = FieldValidators.validateString;
+                const validateFunc = FieldValidators.validateString;
                 return (
                     <React.Fragment>
                         <div style={{ display: field.required ? 'none' : 'block' }}>
@@ -1533,7 +1549,7 @@ export abstract class AbstractIssueEditorPage<
         }
 
         // catch-all for unknown field types
-        let validateFunc = field.required ? FieldValidators.validateString : undefined;
+        const validateFunc = field.required ? FieldValidators.validateString : undefined;
 
         if (editmode) {
             return (
@@ -1544,7 +1560,7 @@ export abstract class AbstractIssueEditorPage<
         }
         return (
             <Field
-                label={field.name}
+                label={<span>{field.name}</span>}
                 isRequired={field.required}
                 id={field.key}
                 name={field.key}
@@ -1607,7 +1623,7 @@ export abstract class AbstractIssueEditorPage<
                 return (
                     <div className="ac-vpadding">
                         <div className="ac-flex">
-                            <img src={value.iconUrl} width="24" height="24" />
+                            <img src={value.iconUrl} width="24" height="24" alt={value.name || 'Icon'} />
                             <span style={{ marginLeft: '10px' }}>{value.name}</span>
                         </div>
                     </div>
@@ -1682,7 +1698,7 @@ export abstract class AbstractIssueEditorPage<
     }
 
     private getValidateFunction(field: FieldUI, editmode: boolean = false): FuncOrUndefined {
-        let valType = field.valueType;
+        const valType = field.valueType;
         let valfunc = undefined;
 
         switch (valType) {

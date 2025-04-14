@@ -1,10 +1,12 @@
 import { commands, Memento, QuickPickItem, window } from 'vscode';
+
 import { Commands } from '../commands';
 import { Container } from '../container';
 import { ConfigSection, ConfigSubSection } from '../lib/ipc/models/config';
 import { Logger } from '../logger';
 import { checkout } from '../views/pullrequest/gitActions';
 import { bitbucketSiteForRemote, clientForHostname } from './bbUtils';
+import { CheckoutHelper } from './interfaces';
 import { WorkspaceRepo } from './model';
 
 type RefInfo = {
@@ -28,11 +30,17 @@ const RefInfoLifespanMs = 60 * 1000;
 /**
  * Methods for checking out branches and pulling repos given their urls and ref names.
  */
-export class CheckoutHelper {
+export class BitbucketCheckoutHelper implements CheckoutHelper {
     constructor(private globalState: Memento) {}
 
-    public async checkoutRef(cloneUrl: string, ref: string, refType: string, sourceCloneUrl = ''): Promise<boolean> {
-        let wsRepo = this.findRepoInCurrentWorkspace(cloneUrl);
+    public async checkoutRef(
+        cloneUrl: string,
+        ref: string,
+        refType: string,
+        sourceCloneUrl?: string,
+    ): Promise<boolean> {
+        sourceCloneUrl = sourceCloneUrl || '';
+        const wsRepo = this.findRepoInCurrentWorkspace(cloneUrl);
         if (!wsRepo) {
             this.globalState.update(BitbucketRefInfoKey, {
                 timestamp: new Date().getTime(),
@@ -83,7 +91,7 @@ export class CheckoutHelper {
         if (refInfo.refName && refInfo.timestamp) {
             const now = new Date().getTime();
             if (now - refInfo.timestamp < RefInfoLifespanMs) {
-                let wsRepo = this.findRepoInCurrentWorkspace(refInfo.cloneUrl);
+                const wsRepo = this.findRepoInCurrentWorkspace(refInfo.cloneUrl);
                 if (!wsRepo) {
                     this.showLoginMessage(
                         `Could not find repo in current workspace after attempting to clone. Are you authenticated with Bitbucket?`,

@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+
 import { clientForSite } from '../../bitbucket/bbUtils';
 import { BitbucketIssue, PaginatedBitbucketIssues, WorkspaceRepo } from '../../bitbucket/model';
 import { Commands } from '../../commands';
@@ -47,7 +48,7 @@ export class BitbucketIssuesRepositoryNode extends AbstractBaseNode {
         }
         if (!this._children) {
             const bbApi = await clientForSite(this.workspaceRepo.mainSiteRemote.site!);
-            let issues = await bbApi.issues!.getList(this.workspaceRepo);
+            const issues = await bbApi.issues!.getList(this.workspaceRepo);
             if (issues.data.length === 0) {
                 return [new SimpleNode('No open issues for this repository')];
             }
@@ -60,7 +61,7 @@ export class BitbucketIssuesRepositoryNode extends AbstractBaseNode {
     }
 }
 
-export class BitbucketIssueNode extends AbstractBaseNode {
+class BitbucketIssueNode extends AbstractBaseNode {
     constructor(readonly issue: BitbucketIssue) {
         super();
     }
@@ -88,7 +89,7 @@ class NextPageNode extends AbstractBaseNode {
     }
 
     getTreeItem(): vscode.TreeItem {
-        let item = new vscode.TreeItem('Load next page', vscode.TreeItemCollapsibleState.None);
+        const item = new vscode.TreeItem('Load next page', vscode.TreeItemCollapsibleState.None);
         item.iconPath = Resources.icons.get('more');
 
         item.command = {

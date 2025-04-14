@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+
 import { clientForSite } from '../../bitbucket/bbUtils';
 import { BitbucketSite } from '../../bitbucket/model';
 import { Commands } from '../../commands';
@@ -31,7 +32,7 @@ export class StaticBitbucketIssuesNode extends AbstractBaseNode {
         }
         if (!this._children) {
             const bbApi = await clientForSite(this.site);
-            let issues = await bbApi.issues?.getIssuesForKeys(this.site, this.issueKeys);
+            const issues = await bbApi.issues?.getIssuesForKeys(this.site, this.issueKeys);
             if (!issues || issues.length === 0) {
                 return [new SimpleNode('No issues found')];
             }

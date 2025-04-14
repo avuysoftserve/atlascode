@@ -1,13 +1,15 @@
 import { commands, window } from 'vscode';
+
 import { clientForSite } from '../../bitbucket/bbUtils';
 import { WorkspaceRepo } from '../../bitbucket/model';
 import { Commands } from '../../commands';
 import { Container } from '../../container';
 import { Pipeline, PipelineTarget } from '../../pipelines/model';
+import { BitbucketActivityMonitor } from '../BitbucketActivityMonitor';
 import { descriptionForState, generatePipelineTitle, shouldDisplay } from './Helpers';
 
 export class PipelinesMonitor implements BitbucketActivityMonitor {
-    private _previousResults: Map<string, Pipeline[]> = new Map();
+    private _previousResults: Record<string, Pipeline[]> = {};
 
     constructor(private _repositories: WorkspaceRepo[]) {}
 
@@ -15,7 +17,7 @@ export class PipelinesMonitor implements BitbucketActivityMonitor {
         if (!Container.config.bitbucket.pipelines.monitorEnabled) {
             return;
         }
-        for (var i = 0; i < this._repositories.length; i++) {
+        for (let i = 0; i < this._repositories.length; i++) {
             const wsRepo = this._repositories[i];
             const previousResults = this._previousResults[wsRepo.rootUri];
 
@@ -30,7 +32,7 @@ export class PipelinesMonitor implements BitbucketActivityMonitor {
             }
 
             bbApi.pipelines.getRecentActivity(site).then((newResults) => {
-                var diffs = this.diffResults(previousResults, newResults);
+                let diffs = this.diffResults(previousResults, newResults);
                 diffs = diffs.filter((p) => this.shouldDisplayTarget(p.target));
                 const buttonText = diffs.length === 1 ? 'View' : 'View Pipeline Explorer';
                 if (diffs.length > 0) {
@@ -61,8 +63,8 @@ export class PipelinesMonitor implements BitbucketActivityMonitor {
         const changes: Pipeline[] = [];
         const previousLength = oldResults.length;
         const newLength = newResults.length;
-        var i = 0;
-        var j = 0;
+        let i = 0;
+        let j = 0;
         while (true) {
             if (i === previousLength || j === newLength) {
                 return changes;

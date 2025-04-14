@@ -2,6 +2,7 @@ import { isMinimalIssue, MinimalIssue } from '@atlassianlabs/jira-pi-common-mode
 import axios, { CancelToken, CancelTokenSource } from 'axios';
 import pSettle, { PromiseFulfilledResult } from 'p-settle';
 import * as vscode from 'vscode';
+
 import { DetailedSiteInfo, ProductJira } from '../../atlclients/authInfo';
 import { clientForSite } from '../../bitbucket/bbUtils';
 import { extractBitbucketIssueKeys, extractIssueKeys } from '../../bitbucket/issueKeysExtractor';
@@ -56,7 +57,7 @@ export class VSCPullRequestDetailsActionApi implements PullRequestDetailsActionA
     async fetchUsers(site: BitbucketSite, query: string, abortKey?: string | undefined): Promise<User[]> {
         const client = await Container.clientManager.bbClient(site.details);
 
-        var cancelToken: CancelToken | undefined = undefined;
+        let cancelToken: CancelToken | undefined = undefined;
 
         if (abortKey) {
             const signal: CancelTokenSource = axios.CancelToken.source();
@@ -183,10 +184,18 @@ export class VSCPullRequestDetailsActionApi implements PullRequestDetailsActionA
         return fileDiffs;
     }
 
+    async getConflictedFiles(pr: PullRequest): Promise<string[]> {
+        const bbApi = await clientForSite(pr.site);
+        const conflictedFiles = await bbApi.pullrequests.getConflictedFiles(pr);
+        return conflictedFiles;
+    }
+
     async openDiffViewForFile(pr: PullRequest, fileDiff: FileDiff, comments: Comment[]): Promise<void> {
+        const conflictedFiles = await this.getConflictedFiles(pr);
         const diffViewArgs = await getArgsForDiffView(
             { data: comments },
             fileDiff,
+            conflictedFiles,
             pr,
             Container.bitbucketContext.prCommentController,
         );

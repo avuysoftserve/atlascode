@@ -1,5 +1,6 @@
 import { ReducerAction } from '@atlassianlabs/guipi-core-controller';
 import { createEmptyMinimalIssue, MinimalIssue } from '@atlassianlabs/jira-pi-common-models';
+
 import { DetailedSiteInfo, emptySiteInfo } from '../../../atlclients/authInfo';
 import { BitbucketBranchingModel, WorkspaceRepo } from '../../../bitbucket/model';
 import { Branch } from '../../../typings/git';
@@ -11,10 +12,6 @@ export enum StartWorkMessageType {
 
 export type StartWorkMessage = ReducerAction<StartWorkMessageType.Init, StartWorkInitMessage>;
 export type StartWorkResponse = ReducerAction<StartWorkMessageType.StartWorkResponse, StartWorkResponseMessage>;
-
-export interface ComputedBranchNameMessage {
-    branchName: string;
-}
 
 export interface StartWorkIssueMessage {
     issue: MinimalIssue<DetailedSiteInfo>;

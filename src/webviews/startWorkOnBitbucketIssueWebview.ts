@@ -1,5 +1,6 @@
 import orderBy from 'lodash.orderby';
 import * as vscode from 'vscode';
+
 import { bbIssueUrlCopiedEvent, bbIssueWorkStartedEvent } from '../analytics';
 import { DetailedSiteInfo, Product, ProductBitbucket } from '../atlclients/authInfo';
 import { clientForSite } from '../bitbucket/bbUtils';
@@ -12,7 +13,7 @@ import { isStartWork } from '../ipc/issueActions';
 import { Action, onlineStatus } from '../ipc/messaging';
 import { RepoData } from '../ipc/prMessaging';
 import { Logger } from '../logger';
-import { Resources, iconSet } from '../resources';
+import { iconSet, Resources } from '../resources';
 import { Branch, RefType, Repository } from '../typings/git';
 import { AbstractReactWebview, InitializingWebview } from './abstractWebview';
 
@@ -20,7 +21,7 @@ export class StartWorkOnBitbucketIssueWebview
     extends AbstractReactWebview
     implements InitializingWebview<BitbucketIssue>
 {
-    private _state: BitbucketIssue;
+    private _state: BitbucketIssue | undefined;
 
     constructor(extensionPath: string) {
         super(extensionPath);
@@ -87,7 +88,7 @@ export class StartWorkOnBitbucketIssueWebview
                 }
                 case 'copyBitbucketIssueLink': {
                     handled = true;
-                    const linkUrl = this._state.data.links!.html!.href!;
+                    const linkUrl = this._state!.data.links!.html!.href!;
                     await vscode.env.clipboard.writeText(linkUrl);
                     bbIssueUrlCopiedEvent().then((e) => {
                         Container.analyticsClient.sendTrackEvent(e);
@@ -97,7 +98,7 @@ export class StartWorkOnBitbucketIssueWebview
                 case 'startWork': {
                     if (isStartWork(e)) {
                         try {
-                            const issue = this._state;
+                            const issue = this._state!;
                             if (e.setupBitbucket) {
                                 const scm = Container.bitbucketContext.getRepositoryScm(e.repoUri)!;
                                 await this.createOrCheckoutBranch(
@@ -105,6 +106,7 @@ export class StartWorkOnBitbucketIssueWebview
                                     e.targetBranchName,
                                     e.sourceBranch,
                                     e.remoteName,
+                                    e.pushBranchToRemote,
                                 );
                             }
 
@@ -138,6 +140,7 @@ export class StartWorkOnBitbucketIssueWebview
         destBranch: string,
         sourceBranch: Branch,
         remote: string,
+        pushBranchToRemote: boolean,
     ): Promise<void> {
         // checkout if a branch exists already
         try {
@@ -145,14 +148,14 @@ export class StartWorkOnBitbucketIssueWebview
             await repo.getBranch(destBranch);
             await repo.checkout(destBranch);
             return;
-        } catch (_) {}
+        } catch {}
 
         // checkout if there's a matching remote branch (checkout will track remote branch automatically)
         try {
             await repo.getBranch(`remotes/${remote}/${destBranch}`);
             await repo.checkout(destBranch);
             return;
-        } catch (_) {}
+        } catch {}
 
         // no existing branches, create a new one
         await repo.createBranch(
@@ -160,7 +163,11 @@ export class StartWorkOnBitbucketIssueWebview
             true,
             `${sourceBranch.type === RefType.RemoteHead ? 'remotes/' : ''}${sourceBranch.name}`,
         );
-        await repo.push(remote, destBranch, true);
+
+        if (pushBranchToRemote) {
+            await repo.push(remote, destBranch, true);
+        }
+
         return;
     }
 
@@ -222,8 +229,8 @@ export class StartWorkOnBitbucketIssueWebview
 
         this.isRefeshing = true;
         try {
-            const bbApi = await clientForSite(this._state.site);
-            const updatedIssue = await bbApi.issues!.refetch(this._state);
+            const bbApi = await clientForSite(this._state!.site);
+            const updatedIssue = await bbApi.issues!.refetch(this._state!);
             this.updateIssue(updatedIssue);
         } catch (e) {
             Logger.error(e);

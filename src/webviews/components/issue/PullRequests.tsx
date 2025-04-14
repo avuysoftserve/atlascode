@@ -1,7 +1,8 @@
-import Avatar from '@atlaskit/avatar';
 import Button from '@atlaskit/button';
 import Lozenge from '@atlaskit/lozenge';
+import Tooltip from '@atlaskit/tooltip';
 import React from 'react';
+
 import { PullRequestData } from '../../../bitbucket/model';
 
 export default class PullRequests extends React.Component<
@@ -11,14 +12,6 @@ export default class PullRequests extends React.Component<
     },
     {}
 > {
-    private avatar(pr: PullRequestData): any {
-        const url = pr.author.avatarUrl;
-        if (url) {
-            return <Avatar src={url} size="small" />;
-        }
-        return <div />;
-    }
-
     private prState(pr: any): any {
         switch (pr.state) {
             case 'MERGED':
@@ -36,14 +29,18 @@ export default class PullRequests extends React.Component<
 
     render() {
         return this.props.pullRequests.map((pr: PullRequestData) => {
+            const title = `${pr.destination!.repo!.displayName} - Pull request #${pr.id}`;
             return (
-                <div key={pr.url} style={{ display: 'flex', alignItems: 'center' }}>
-                    {this.avatar(pr)}
-                    <Button appearance="link" onClick={() => this.props.onClick(pr)}>{`${
-                        pr.destination!.repo!.displayName
-                    } - Pull request #${pr.id}`}</Button>
-                    {this.prState(pr)}
-                </div>
+                <Tooltip content={`${pr.author.displayName}: ${title}`}>
+                    <div key={pr.url} style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ maxLines: 1, textOverflow: 'ellipsis', overflow: 'auto' }}>
+                            <Button appearance="link" onClick={() => this.props.onClick(pr)}>
+                                {title}
+                            </Button>
+                        </div>
+                        <div style={{ overflow: 'visible' }}>{this.prState(pr)}</div>
+                    </div>
+                </Tooltip>
             );
         });
     }

@@ -1,11 +1,12 @@
 import { EpicFieldInfo, getEpicFieldInfo, IssueLinkType } from '@atlassianlabs/jira-pi-common-models';
-import { Fields, readField } from '@atlassianlabs/jira-pi-meta-models/jira-meta';
+import { Fields, readField } from '@atlassianlabs/jira-pi-meta-models';
 import { Disposable } from 'vscode';
+
 import { DetailedSiteInfo } from '../atlclients/authInfo';
 import { Container } from '../container';
 import { Logger } from '../logger';
 
-export const detailedIssueFields: string[] = [
+const detailedIssueFields: string[] = [
     'summary',
     'description',
     'comment',
@@ -24,7 +25,8 @@ export const detailedIssueFields: string[] = [
     'components',
     'fixVersions',
 ];
-export const minimalDefaultIssueFields: string[] = [
+
+const minimalDefaultIssueFields: string[] = [
     'summary',
     'issuetype',
     'status',
@@ -68,8 +70,8 @@ export class JiraSettingsManager extends Disposable {
     }
 
     public async getMinimalIssueFieldIdsForSite(site: DetailedSiteInfo): Promise<string[]> {
-        let fields = Array.from(minimalDefaultIssueFields);
-        let epicInfo = await this.getEpicFieldsForSite(site);
+        const fields = Array.from(minimalDefaultIssueFields);
+        const epicInfo = await this.getEpicFieldsForSite(site);
 
         if (epicInfo.epicsEnabled) {
             fields.push(epicInfo.epicLink.id, epicInfo.epicName.id);
@@ -79,8 +81,8 @@ export class JiraSettingsManager extends Disposable {
     }
 
     public async getDetailedIssueFieldIdsForSite(site: DetailedSiteInfo): Promise<string[]> {
-        let fields = Array.from(detailedIssueFields);
-        let epicInfo = await this.getEpicFieldsForSite(site);
+        const fields = Array.from(detailedIssueFields);
+        const epicInfo = await this.getEpicFieldsForSite(site);
 
         if (epicInfo.epicsEnabled) {
             fields.push(epicInfo.epicLink.id, epicInfo.epicName.id);
@@ -90,13 +92,13 @@ export class JiraSettingsManager extends Disposable {
     }
 
     public async getEpicFieldsForSite(site: DetailedSiteInfo): Promise<EpicFieldInfo> {
-        let allFields: Fields = await this.getAllFieldsForSite(site);
+        const allFields: Fields = await this.getAllFieldsForSite(site);
         return getEpicFieldInfo(allFields);
     }
 
     public async getAllFieldsForSite(site: DetailedSiteInfo): Promise<Fields> {
         if (!this._fieldStore.has(site.id)) {
-            let fields = await this.fetchAllFieldsForSite(site);
+            const fields = await this.fetchAllFieldsForSite(site);
             this._fieldStore.set(site.id, fields);
         }
 
@@ -104,9 +106,9 @@ export class JiraSettingsManager extends Disposable {
     }
 
     private async fetchAllFieldsForSite(site: DetailedSiteInfo): Promise<Fields> {
-        let fields: Fields = {};
+        const fields: Fields = {};
         const client = await Container.clientManager.jiraClient(site);
-        let allFields = await client.getFields();
+        const allFields = await client.getFields();
         if (allFields) {
             allFields.forEach((field) => {
                 const key = field.key ? field.key : field.id;

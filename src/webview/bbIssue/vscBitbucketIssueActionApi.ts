@@ -1,5 +1,6 @@
 import axios, { CancelToken, CancelTokenSource } from 'axios';
 import { commands } from 'vscode';
+
 import { clientForSite } from '../../bitbucket/bbUtils';
 import { BitbucketIssue, Comment, User } from '../../bitbucket/model';
 import { Commands } from '../../commands';
@@ -48,7 +49,7 @@ export class VSCBitbucketIssueActionApi implements BitbucketIssueActionApi {
     async fetchUsers(issue: BitbucketIssue, query: string, abortKey?: string): Promise<User[]> {
         const bbApi = await clientForSite(issue.site);
 
-        var cancelToken: CancelToken | undefined = undefined;
+        let cancelToken: CancelToken | undefined = undefined;
 
         if (abortKey) {
             const signal: CancelTokenSource = axios.CancelToken.source();

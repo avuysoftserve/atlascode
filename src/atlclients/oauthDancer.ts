@@ -1,26 +1,25 @@
+import axios, { AxiosInstance } from 'axios';
+import EventEmitter from 'eventemitter3';
 import * as express from 'express';
 import * as http from 'http';
+import Mustache from 'mustache';
+import PCancelable from 'p-cancelable';
+import pTimeout from 'p-timeout';
+import { promisify } from 'util';
+import { v4 } from 'uuid';
 import * as vscode from 'vscode';
-
-import { ConnectionTimeout, Time } from '../util/time';
-import { OAuthProvider, OAuthResponse, ProductBitbucket, ProductJira, SiteInfo } from './authInfo';
-import { Strategy, strategyForProvider } from './strategy';
-import axios, { AxiosInstance } from 'axios';
+import { Disposable } from 'vscode';
 
 import { AxiosUserAgent } from '../constants';
 import { Container } from '../container';
-import { Disposable } from 'vscode';
-import EventEmitter from 'eventemitter3';
-import { Logger } from '../logger';
-import Mustache from 'mustache';
-import PCancelable from 'p-cancelable';
-import { Resources } from '../resources';
-import { addCurlLogging } from './interceptors';
 import { getAgent } from '../jira/jira-client/providers';
-import pTimeout from 'p-timeout';
-import { promisify } from 'util';
+import { Logger } from '../logger';
+import { Resources } from '../resources';
+import { ConnectionTimeout, Time } from '../util/time';
+import { OAuthProvider, OAuthResponse, ProductBitbucket, ProductJira, SiteInfo } from './authInfo';
+import { addCurlLogging } from './interceptors';
 import { responseHandlerForStrategy } from './responseHandler';
-import { v4 } from 'uuid';
+import { Strategy, strategyForProvider } from './strategy';
 
 declare interface ResponseEvent {
     provider: OAuthProvider;
@@ -77,7 +76,7 @@ export class OAuthDancer implements Disposable {
     }
 
     private createApp(): any {
-        let app = express();
+        const app = express();
 
         this.addPathForProvider(app, OAuthProvider.BitbucketCloud);
         this.addPathForProvider(app, OAuthProvider.BitbucketCloudStaging);
@@ -94,6 +93,38 @@ export class OAuthDancer implements Disposable {
         });
 
         return app;
+    }
+
+    public async doInitRemoteDance(state: any) {
+        const provider = OAuthProvider.JiraCloudRemote;
+        const strategy = strategyForProvider(provider);
+
+        const stateBase64 = Buffer.from(JSON.stringify(state)).toString('base64');
+        const uri = vscode.Uri.parse(strategy.authorizeUrl(stateBase64));
+        vscode.window.showInformationMessage(`Opening browser to ${uri.toString(true)}`);
+        vscode.env.openExternal(uri);
+    }
+
+    public async doFinishRemoteDance(provider: OAuthProvider, site: SiteInfo, code: string): Promise<OAuthResponse> {
+        const strategy = strategyForProvider(provider);
+        const agent = getAgent(site);
+        const responseHandler = responseHandlerForStrategy(strategy!, agent, this._axios);
+        const tokens = await responseHandler.tokens(code as string);
+        const accessibleResources = await responseHandler.accessibleResources(tokens.accessToken);
+        if (accessibleResources.length === 0) {
+            throw new Error(`No accessible resources found for ${provider}`);
+        }
+        const user = await responseHandler.user(tokens.accessToken, accessibleResources[0]);
+
+        return {
+            access: tokens.accessToken,
+            refresh: tokens.refreshToken!,
+            expirationDate: tokens.expiration,
+            iat: tokens.iat,
+            receivedAt: tokens.receivedAt,
+            user: user,
+            accessibleResources: accessibleResources,
+        };
     }
 
     public async doDance(provider: OAuthProvider, site: SiteInfo, callback: string): Promise<OAuthResponse> {

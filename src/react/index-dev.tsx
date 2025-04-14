@@ -2,6 +2,7 @@ import { CssBaseline, ThemeProvider } from '@material-ui/core';
 import React, { useCallback, useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import useConstant from 'use-constant';
+
 import { UIWSPort } from '../lib/ipc/models/ports';
 import AtlGlobalStyles from './atlascode/common/AtlGlobalStyles';
 import { AtlLoader } from './atlascode/common/AtlLoader';
@@ -10,12 +11,21 @@ import { atlascodeTheme } from './atlascode/theme/atlascodeTheme';
 import { computeStyles, VSCodeStylesContext } from './vscode/theme/styles';
 import { createVSCodeTheme } from './vscode/theme/vscodeTheme';
 
+declare global {
+    // eslint-disable-next-line no-unused-vars
+    interface Window {
+        acquireVsCodeApi: () => any;
+    }
+}
+
 // @ts-ignore
 // __webpack_public_path__ is used to set the public path for the js files - https://webpack.js.org/guides/public-path/
+// eslint-disable-next-line no-var
 declare var __webpack_public_path__: string;
+// eslint-disable-next-line no-unused-vars
 __webpack_public_path__ = `${document.baseURI!}build/`;
 
-const routes = {
+const routes: Record<string, any> = {
     atlascodeSettingsV2: React.lazy(
         () => import(/* webpackChunkName: "atlascodeSettingsV2" */ './atlascode/config/ConfigPage'),
     ),
@@ -29,7 +39,6 @@ const routes = {
         () =>
             import(/* webpackChunkName: "createBitbucketIssuePageV2" */ './atlascode/bbissue/CreateBitbucketIssuePage'),
     ),
-    welcomePageV2: React.lazy(() => import(/* webpackChunkName: "welcomePageV2" */ './atlascode/welcome/Welcome')),
     startWorkPageV2: React.lazy(
         () => import(/* webpackChunkName: "startWorkPageV2" */ './atlascode/startwork/StartWorkPage'),
     ),
@@ -45,12 +54,11 @@ const routes = {
     ),
 };
 
-const ports = {
+const ports: Record<string, number> = {
     atlascodeSettingsV2: UIWSPort.Settings,
     atlascodeOnboardingV2: UIWSPort.Onboarding,
     bitbucketIssuePageV2: UIWSPort.BitbucketIssuePage,
     createBitbucketIssuePageV2: UIWSPort.CreateBitbucketIssuePage,
-    welcomePageV2: UIWSPort.WelcomePage,
     startWorkPageV2: UIWSPort.StartWork,
     pipelineSummaryV2: UIWSPort.PipelineSummary,
     pullRequestDetailsPageV2: UIWSPort.PullRequestDetailsPage,
@@ -71,9 +79,9 @@ class VsCodeApi {
         // most important part - incoming messages
         this.conn.onmessage = function (message): void {
             try {
-                var json = JSON.parse(message.data);
+                const json = JSON.parse(message.data);
                 window.postMessage(json.data, '*');
-            } catch (e) {
+            } catch {
                 console.error('Invalid JSON: ', message.data);
                 return;
             }

@@ -1,4 +1,4 @@
-'use strict';
+import { ATLASCODE_TEST_HOST } from '../../src/constants';
 
 export enum AuthChangeType {
     Update = 'update',
@@ -39,6 +39,7 @@ export enum OAuthProvider {
     BitbucketCloudStaging = 'bbcloudstaging',
     JiraCloud = 'jiracloud',
     JiraCloudStaging = 'jiracloudstaging',
+    JiraCloudRemote = 'jiracloudremote',
 }
 export interface AuthInfoV1 {
     access: string;
@@ -116,6 +117,8 @@ export interface DetailedSiteInfo extends SiteInfo {
     isCloud: boolean;
     userId: string;
     credentialId: string;
+    /** Jira only -- Indicates if the site's schema contains a field named 'resolution' */
+    hasResolutionField: boolean;
 }
 
 // You MUST send source
@@ -166,6 +169,7 @@ export const emptySiteInfo: DetailedSiteInfo = {
     isCloud: true,
     userId: '',
     credentialId: '',
+    hasResolutionField: false,
 };
 
 export const emptyAccessibleResource: AccessibleResource = {
@@ -266,6 +270,11 @@ export function getSecretForAuthInfo(info: any): string {
 
 export function oauthProviderForSite(site: SiteInfo): OAuthProvider | undefined {
     const hostname = site.host.split(':')[0];
+
+    // Added to allow for testing flow of AXON-32
+    if (hostname.endsWith(ATLASCODE_TEST_HOST)) {
+        return undefined;
+    }
 
     if (hostname.endsWith('atlassian.net') || hostname.endsWith('jira.com')) {
         return OAuthProvider.JiraCloud;

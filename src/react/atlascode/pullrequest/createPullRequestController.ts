@@ -2,6 +2,7 @@ import { defaultActionGuard, defaultStateGuard, ReducerAction } from '@atlassian
 import { MinimalIssue } from '@atlassianlabs/jira-pi-common-models';
 import React, { useCallback, useMemo, useReducer } from 'react';
 import { v4 } from 'uuid';
+
 import { DetailedSiteInfo } from '../../../atlclients/authInfo';
 import { BitbucketSite, Commit, FileDiff, PullRequest, User } from '../../../bitbucket/model';
 import { CommonActionType } from '../../../lib/ipc/fromUI/common';
@@ -34,7 +35,7 @@ export interface CreatePullRequestControllerApi {
     submit: (data: SubmitCreateRequestAction) => Promise<PullRequest>;
 }
 
-export const emptyApi: CreatePullRequestControllerApi = {
+const emptyApi: CreatePullRequestControllerApi = {
     postMessage: () => {},
     refresh: () => {},
     openLink: () => {},
@@ -64,7 +65,7 @@ const emptyState: CreatePullRequestState = {
     isSomethingLoading: false,
 };
 
-export enum CreatePullRequestUIActionType {
+enum CreatePullRequestUIActionType {
     Init = 'init',
     InitComments = 'initComments',
     UpdateCommits = 'updateCommits',
@@ -73,14 +74,12 @@ export enum CreatePullRequestUIActionType {
     Loading = 'loading',
 }
 
-export type CreatePullRequestUIAction =
+type CreatePullRequestUIAction =
     | ReducerAction<CreatePullRequestUIActionType.Init, { data: CreatePullRequestInitMessage }>
     | ReducerAction<CreatePullRequestUIActionType.UpdateIssue, { data: MinimalIssue<DetailedSiteInfo> }>
     | ReducerAction<CreatePullRequestUIActionType.UpdateCommits, { data: { commits: Commit[]; fileDiffs: FileDiff[] } }>
     | ReducerAction<CreatePullRequestUIActionType.LocalChange, { data: Partial<CreatePullRequestState> }>
     | ReducerAction<CreatePullRequestUIActionType.Loading, {}>;
-
-export type CreatePullRequestChanges = { [key: string]: any };
 
 function reducer(state: CreatePullRequestState, action: CreatePullRequestUIAction): CreatePullRequestState {
     switch (action.type) {
@@ -154,7 +153,7 @@ export function useCreatePullRequestController(): [CreatePullRequestState, Creat
             return new Promise<User[]>((resolve, reject) => {
                 (async () => {
                     try {
-                        var abortKey: string = '';
+                        let abortKey: string = '';
 
                         if (abortSignal) {
                             abortKey = v4();

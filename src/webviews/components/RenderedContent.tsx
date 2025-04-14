@@ -34,7 +34,7 @@ export const RenderedContent: React.FC<Props> = (props: Props) => {
             },
             { capture: true },
         );
-    }, [props.fetchImage, ref]);
+    }, [props.fetchImage, ref]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return <p ref={ref} dangerouslySetInnerHTML={{ __html: props.html }} />;
 };

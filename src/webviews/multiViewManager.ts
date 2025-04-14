@@ -1,4 +1,5 @@
 import { Disposable } from 'vscode';
+
 import { isInitializable, ReactWebview } from './abstractWebview';
 
 // AbstractMultiViewManager is a base class for managing a single webview type that can display in multiple tabs at once.
@@ -31,7 +32,7 @@ export abstract class AbstractMultiViewManager<T> implements Disposable {
         this._listeners.set(
             key,
             view.onDidPanelDispose()(() => {
-                let view = this._viewMap.get(key);
+                const view = this._viewMap.get(key);
 
                 if (view) {
                     view.dispose();

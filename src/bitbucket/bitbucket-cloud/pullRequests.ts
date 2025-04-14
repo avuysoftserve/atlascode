@@ -1,7 +1,8 @@
 import { CancelToken } from 'axios';
 import PQueue from 'p-queue/dist';
-import { configuration } from '../../config/configuration';
+
 import { DetailedSiteInfo } from '../../atlclients/authInfo';
+import { configuration } from '../../config/configuration';
 import { Logger } from '../../logger';
 import { CacheMap } from '../../util/cachemap';
 import { Time } from '../../util/time';
@@ -34,9 +35,9 @@ export const maxItemsSupported = {
     reviewers: 100,
     buildStatuses: 100,
 };
-export const defaultPagelen = 25;
+const defaultPagelen = 25;
 
-const mergeStrategyLabels = {
+const mergeStrategyLabels: Record<string, string> = {
     merge_commit: 'Merge commit',
     squash: 'Squash',
     fast_forward: 'Fast forward',
@@ -202,21 +203,47 @@ export class CloudPullRequestApi implements PullRequestApi {
         }));
     }
 
+    async getConflictedFiles(pr: PullRequest): Promise<string[]> {
+        const { ownerSlug, repoSlug } = pr.site;
+
+        // get PRType
+        const prTypeUrl = `https://api.bitbucket.org/internal/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}`;
+        let prTypeData = { data: { diff_type: '' } };
+        try {
+            prTypeData = await this.client.get(prTypeUrl);
+        } catch (ex) {
+            const error = new Error(`Fetching prTypeData failed for the PR: ${pr.data.id}} with error: ${ex}`);
+            Logger.error(error);
+        }
+        const conflictedFiles: string[] = [];
+        if (prTypeData.data.diff_type === 'TOPIC') {
+            const conflictUrl = `https://api.bitbucket.org/internal/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/conflicts`;
+            let resp = { data: [] };
+            try {
+                resp = await this.client.get(conflictUrl);
+            } catch (ex) {
+                const error = new Error(`Fetching conflict data failed for the PR: ${pr.data.id}} with error: ${ex}`);
+                Logger.error(error);
+            }
+            resp.data.forEach((data: { path: '' }) => conflictedFiles.push(data.path));
+        }
+        return conflictedFiles;
+    }
+
     async getChangedFiles(pr: PullRequest, spec?: string): Promise<FileDiff[]> {
         const { ownerSlug, repoSlug } = pr.site;
 
         const diffUrl = spec
             ? `/repositories/${ownerSlug}/${repoSlug}/diffstat/${spec}`
             : `/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/diffstat`;
-        let { data } = await this.client.get(diffUrl);
-
-        const conflictUrl = `https://api.bitbucket.org/internal/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/conflicts`;
-        let resp = await this.client.get(conflictUrl);
-        const conflictData = resp.data;
-
-        const prTypeUrl = `https://api.bitbucket.org/internal/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}`;
-        resp = await this.client.get(prTypeUrl);
-        const diffType = resp.data.diff_type;
+        let data = { values: undefined, next: undefined };
+        try {
+            const response = await this.client.get(diffUrl);
+            data = response.data;
+        } catch (ex) {
+            const error = new Error(`Fetching diffStat failed for the PR: ${pr.data.id} with error ${ex}`);
+            Logger.error(error);
+        }
 
         if (!data.values) {
             return [];
@@ -243,15 +270,7 @@ export class CloudPullRequestApi implements PullRequestApi {
                 newPathDeletions: [],
                 newPathContextMap: {},
             },
-            isConflicted: this.isFileConflicted(diffType, diffStat, conflictData),
         }));
-    }
-
-    // Topic diffs no longer indicate a conflict in the status field so we have to check the results of the conflict endpoint.
-    private isFileConflicted(diffType: string, diffStat: any, conflictData: any[]): boolean | undefined {
-        const oldPath = diffStat.old?.path;
-        const newPath = diffStat.new?.path;
-        return diffType === 'TOPIC' && conflictData.some((c) => c.path === newPath ?? oldPath);
     }
 
     private mapStatusWordsToFileStatus(status: string): FileStatus {
@@ -353,7 +372,7 @@ export class CloudPullRequestApi implements PullRequestApi {
             }
 
             return accumulatedTasks.map((task: any) => this.convertDataToTask(task, pr.site));
-        } catch (e) {
+        } catch {
             return [];
         }
     }
@@ -490,8 +509,8 @@ export class CloudPullRequestApi implements PullRequestApi {
 
     private shouldDisplayComment(comment: Comment): boolean {
         let hasUndeletedChild: boolean = false;
-        let filteredChildren = [];
-        for (let child of comment.children) {
+        const filteredChildren = [];
+        for (const child of comment.children) {
             if (this.shouldDisplayComment(child)) {
                 filteredChildren.push(child);
                 hasUndeletedChild = true;
@@ -540,6 +559,8 @@ export class CloudPullRequestApi implements PullRequestApi {
                 state: status.state!,
                 url: status.url!,
                 ts: status.created_on!,
+                key: status.key!,
+                last_updated: status.updated_on!,
             }));
     }
 
@@ -624,7 +645,7 @@ export class CloudPullRequestApi implements PullRequestApi {
                 });
 
                 return (data.values || []).map((reviewer: any) => CloudPullRequestApi.toUserModel(reviewer.user));
-            } catch (e) {
+            } catch {
                 return [];
             }
         }
@@ -648,7 +669,7 @@ export class CloudPullRequestApi implements PullRequestApi {
             }
 
             return teamMembers.map((m: any) => CloudPullRequestApi.toUserModel(m.user));
-        } catch (e) {
+        } catch {
             return [];
         }
     }
@@ -667,7 +688,7 @@ export class CloudPullRequestApi implements PullRequestApi {
         workspaceRepo: WorkspaceRepo,
         createPrData: CreatePullRequestData,
     ): Promise<PullRequest> {
-        let prBody = {
+        const prBody = {
             type: 'pullrequest',
             title: createPrData.title,
             summary: {
@@ -703,7 +724,7 @@ export class CloudPullRequestApi implements PullRequestApi {
     async update(pr: PullRequest, title: string, summary: string, reviewerAccountIds: string[]): Promise<PullRequest> {
         const { ownerSlug, repoSlug } = pr.site;
 
-        let prBody = {
+        const prBody = {
             title: title,
             summary: {
                 raw: summary,
@@ -723,17 +744,31 @@ export class CloudPullRequestApi implements PullRequestApi {
 
     async updateApproval(pr: PullRequest, status: string): Promise<ApprovalStatus> {
         const { ownerSlug, repoSlug } = pr.site;
-        const { data } =
-            status === 'APPROVED'
-                ? await this.client.post(
-                      `/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/approve`,
-                      {},
-                  )
-                : await this.client.delete(
-                      `/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/approve`,
-                      {},
-                  );
-        return data.approved ? 'APPROVED' : 'UNAPPROVED';
+        switch (status) {
+            case 'APPROVED':
+                await this.client.post(`/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/approve`, {});
+                return 'APPROVED';
+            case 'CHANGES_REQUESTED':
+                await this.client.post(
+                    `/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/request-changes`,
+                    {},
+                );
+                return 'CHANGES_REQUESTED';
+            case 'NO_CHANGES_REQUESTED':
+                await this.client.delete(
+                    `/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/request-changes`,
+                    {},
+                );
+                return 'UNAPPROVED';
+            case 'UNAPPROVED':
+                await this.client.delete(
+                    `/repositories/${ownerSlug}/${repoSlug}/pullrequests/${pr.data.id}/approve`,
+                    {},
+                );
+                return 'UNAPPROVED';
+            default:
+                return 'UNAPPROVED';
+        }
     }
 
     async merge(
@@ -838,7 +873,12 @@ export class CloudPullRequestApi implements PullRequestApi {
                 participants: (pr.participants || [])!.map((participant: any) => ({
                     ...CloudPullRequestApi.toUserModel(participant.user!),
                     role: participant.role!,
-                    status: !!participant.approved ? 'APPROVED' : 'UNAPPROVED',
+                    status:
+                        participant.state !== null
+                            ? participant.state.toUpperCase()
+                            : !!participant.approved
+                              ? 'APPROVED'
+                              : 'UNAPPROVED',
                 })),
                 source: source,
                 destination: destination,
@@ -850,6 +890,7 @@ export class CloudPullRequestApi implements PullRequestApi {
                 state: pr.state!,
                 closeSourceBranch: !!pr.close_source_branch,
                 taskCount: pr.task_count || 0,
+                draft: pr.draft!,
             },
         };
     }

@@ -1,7 +1,8 @@
 import { commands } from 'vscode';
 
 export enum CommandContext {
-    JiraExplorer = 'atlascode:jiraExplorerEnabled',
+    CustomJQLExplorer = 'atlascode:customJQLExplorerEnabled',
+    AssignedIssueExplorer = 'atlascode:assignedIssueExplorerEnabled',
     BitbucketExplorer = 'atlascode:bitbucketExplorerEnabled',
     PipelineExplorer = 'atlascode:pipelineExplorerEnabled',
     BitbucketIssuesExplorer = 'atlascode:bitbucketIssuesExplorerEnabled',

@@ -1,18 +1,24 @@
 // prettier-ignore-start
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
 // prettier-ignore-end
 import './App.css';
 
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+
 // @ts-ignore
 // __webpack_public_path__ is used to set the public path for the js files - https://webpack.js.org/guides/public-path/
+// eslint-disable-next-line no-var
 declare var __webpack_public_path__: string;
+// eslint-disable-next-line no-unused-vars
 __webpack_public_path__ = `${document.baseURI!}build/`;
 
-const routes = {
-    viewIssueScreen: React.lazy(() => import(/* webpackChunkName: "viewIssueScreen" */ './issue/JiraIssuePage')),
+const routes: Record<string, any> = {
+    viewIssueScreen: React.lazy(
+        () => import(/* webpackChunkName: "viewIssueScreen" */ './issue/view-issue-screen/JiraIssuePage'),
+    ),
     atlascodeCreateIssueScreen: React.lazy(
-        () => import(/* webpackChunkName: "atlascodeCreateIssueScreen" */ './issue/CreateIssuePage'),
+        () =>
+            import(/* webpackChunkName: "atlascodeCreateIssueScreen" */ './issue/create-issue-screen/CreateIssuePage'),
     ),
     startWorkOnIssueScreen: React.lazy(
         () => import(/* webpackChunkName: "startWorkOnIssueScreen" */ './issue/StartWorkPage'),
@@ -33,9 +39,9 @@ class VsCodeApi {
         // most important part - incoming messages
         this.conn.onmessage = function (message) {
             try {
-                var json = JSON.parse(message.data);
+                const json = JSON.parse(message.data);
                 window.postMessage(json.data, '*');
-            } catch (e) {
+            } catch {
                 return;
             }
         };

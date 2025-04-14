@@ -1,4 +1,5 @@
 import { AnalyticsWebClient, Identifiers } from '@atlaskit/feature-gate-js-client';
+
 import { AnalyticsClient } from '../../analytics-node-client/src/client.min';
 
 // We'll be using the JS client package for the feature flags,
@@ -15,11 +16,6 @@ type OperationalEventPayload = {
     tags?: string[];
     source: string;
 };
-
-export interface EventBuilderInterface {
-    featureFlagClientInitializedEvent: () => Promise<any>;
-    featureFlagClientInitializationFailedEvent: () => Promise<any>;
-}
 
 export class AnalyticsClientMapper implements AnalyticsWebClient {
     public identifiers: Identifiers;

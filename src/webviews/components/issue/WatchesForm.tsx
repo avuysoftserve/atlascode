@@ -4,9 +4,10 @@ import WatchIcon from '@atlaskit/icon/glyph/watch';
 import WatchFilledIcon from '@atlaskit/icon/glyph/watch-filled';
 import { AsyncSelect } from '@atlaskit/select';
 import { User, Watches } from '@atlassianlabs/jira-pi-common-models';
-import { ValueType } from '@atlassianlabs/jira-pi-meta-models/ui-meta';
+import { ValueType } from '@atlassianlabs/jira-pi-meta-models';
 import debounce from 'lodash.debounce';
 import * as React from 'react';
+
 import * as SelectFieldHelper from '../selectFieldHelper';
 
 type MyState = {
@@ -97,8 +98,8 @@ export default class WatchesForm extends React.Component<MyProps, MyState> {
             return this.getEmptyWatchers();
         }
 
-        let watcherList = this.props.watches.watchers.map((watcher) => {
-            let avatar = watcher.avatarUrls && watcher.avatarUrls['24x24'] ? watcher.avatarUrls['24x24'] : '';
+        const watcherList = this.props.watches.watchers.map((watcher) => {
+            const avatar = watcher.avatarUrls && watcher.avatarUrls['48x48'] ? watcher.avatarUrls['48x48'] : '';
             return (
                 <div className="ac-inline-watcher ac-inline-watcher-hover">
                     <Avatar size="small" src={avatar} />

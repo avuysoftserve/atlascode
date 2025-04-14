@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+
 import { PaginatedPullRequests, PullRequest, WorkspaceRepo } from '../../bitbucket/model';
 import { Container } from '../../container';
 import { AbstractBaseNode } from '../nodes/abstractBaseNode';
@@ -19,18 +20,19 @@ export class RepositoriesNode extends AbstractBaseNode {
     ) {
         super();
         this.treeItem = this.createTreeItem();
-        this.disposables.push({
-            dispose: () => {
-                if (this.children) {
-                    this.children.forEach((child) => {
-                        if (child instanceof PullRequestTitlesNode) {
-                            Container.bitbucketContext.prCommentController.disposePR(child.prHref);
-                        }
-                        child.dispose();
-                    });
+    }
+
+    override dispose(): void {
+        super.dispose();
+
+        if (this.children) {
+            this.children.forEach((child) => {
+                if (child instanceof PullRequestTitlesNode) {
+                    Container.bitbucketContext.prCommentController.disposePR(child.prHref);
                 }
-            },
-        });
+                child.dispose();
+            });
+        }
     }
 
     private createTreeItem(): vscode.TreeItem {
@@ -62,7 +64,7 @@ export class RepositoriesNode extends AbstractBaseNode {
             .filter((child) => child instanceof PullRequestTitlesNode)
             .map((child) => (child as PullRequestTitlesNode).prHref);
 
-        let prs = await this.fetcher(this.workspaceRepo);
+        const prs = await this.fetcher(this.workspaceRepo);
         this.children = this.createChildNodes(prs.data, this.children);
         if (prs.next) {
             this.children!.push(new NextPageNode(prs));
@@ -126,7 +128,7 @@ export class RepositoriesNode extends AbstractBaseNode {
             if (!pr.site.details.isCloud) {
                 //We can preload server PRs even without caching if there are less than 10 of them. Otherwise, probably not a good idea because of
                 //varying bbserver rate limits
-                return new PullRequestTitlesNode(pr, numPRs <= 10 && this.preloadingEnabled, this);
+                return new PullRequestTitlesNode(pr, numPRs <= 10 && this.preloadingEnabled);
             }
 
             const prAndTreeNode = prMap.get(pr.data.id);
@@ -134,7 +136,7 @@ export class RepositoriesNode extends AbstractBaseNode {
                 return prAndTreeNode.node;
             } else {
                 //If there are more than 25 open pull requests, stop preloading them. We don't want to run into rate limit issues for bbcloud
-                return new PullRequestTitlesNode(pr, numPRs <= 10 && this.preloadingEnabled, this);
+                return new PullRequestTitlesNode(pr, numPRs <= 10 && this.preloadingEnabled);
             }
         });
     }

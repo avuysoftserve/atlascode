@@ -1,4 +1,5 @@
 import { Uri } from 'vscode';
+
 import { Container } from '../../container';
 import { Pipeline, PipelineSelectorType, PipelineTarget, Status, statusForState } from '../../pipelines/model';
 import { Resources } from '../../resources';
@@ -38,14 +39,14 @@ export function descriptionForState(
     truncateCommitMessage: boolean,
     excludePipelinePrefix?: boolean,
 ): string {
-    const descriptionForResult = {
+    const descriptionForResult: Record<string, string> = {
         pipeline_state_completed_successful: 'was successful',
         pipeline_state_completed_failed: 'has failed',
         pipeline_state_completed_error: 'has failed',
         pipeline_state_completed_stopped: 'has been stopped',
     };
 
-    var words = 'has done something';
+    let words = 'has done something';
     switch (result.state!.type) {
         case 'pipeline_state_completed':
             words = descriptionForResult[result.state!.result!.type];

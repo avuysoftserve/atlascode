@@ -1,16 +1,20 @@
-import {
-    AuthInfo,
-    AuthInfoState,
-    DetailedSiteInfo,
-    ProductJira,
-    isBasicAuthInfo,
-    isOAuthInfo,
-    isPATAuthInfo,
-} from './authInfo';
-import { CacheMap, Interval } from '../util/cachemap';
-import { ClientError, HTTPClient } from '../bitbucket/httpClient';
-import { ConfigurationChangeEvent, Disposable, ExtensionContext } from 'vscode';
 import { JiraClient, JiraCloudClient, JiraServerClient } from '@atlassianlabs/jira-pi-client';
+import { getProxyHostAndPort } from '@atlassianlabs/pi-client-common';
+import { AxiosResponse } from 'axios';
+import PQueue from 'p-queue';
+import { ConfigurationChangeEvent, Disposable, ExtensionContext } from 'vscode';
+import { commands, window } from 'vscode';
+
+import { BitbucketIssuesApiImpl } from '../bitbucket/bitbucket-cloud/bbIssues';
+import { CloudPullRequestApi } from '../bitbucket/bitbucket-cloud/pullRequests';
+import { CloudRepositoriesApi } from '../bitbucket/bitbucket-cloud/repositories';
+import { ServerPullRequestApi } from '../bitbucket/bitbucket-server/pullRequests';
+import { ServerRepositoriesApi } from '../bitbucket/bitbucket-server/repositories';
+import { ClientError, HTTPClient } from '../bitbucket/httpClient';
+import { BitbucketApi } from '../bitbucket/model';
+import { configuration } from '../config/configuration';
+import { cannotGetClientFor } from '../constants';
+import { Container } from '../container';
 import {
     basicJiraTransportFactory,
     getAgent,
@@ -18,29 +22,26 @@ import {
     jiraTokenAuthProvider,
     oauthJiraTransportFactory,
 } from '../jira/jira-client/providers';
-import { commands, window } from 'vscode';
-
-import { AxiosResponse } from 'axios';
-import { BasicInterceptor } from './basicInterceptor';
-import { BitbucketApi } from '../bitbucket/model';
-import { BitbucketIssuesApiImpl } from '../bitbucket/bitbucket-cloud/bbIssues';
-import { CloudPullRequestApi } from '../bitbucket/bitbucket-cloud/pullRequests';
-import { CloudRepositoriesApi } from '../bitbucket/bitbucket-cloud/repositories';
-import { Container } from '../container';
 import { Logger } from '../logger';
-import { Negotiator } from './negotiate';
-import PQueue from 'p-queue';
 import { PipelineApiImpl } from '../pipelines/pipelines';
-import { ServerPullRequestApi } from '../bitbucket/bitbucket-server/pullRequests';
-import { ServerRepositoriesApi } from '../bitbucket/bitbucket-server/repositories';
 import { SitesAvailableUpdateEvent } from '../siteManager';
-import { cannotGetClientFor } from '../constants';
-import { configuration } from '../config/configuration';
-import { getProxyHostAndPort } from '@atlassianlabs/pi-client-common';
+import { CacheMap } from '../util/cachemap';
+import { Time } from '../util/time';
+import {
+    AuthInfo,
+    AuthInfoState,
+    DetailedSiteInfo,
+    isBasicAuthInfo,
+    isOAuthInfo,
+    isPATAuthInfo,
+    ProductJira,
+} from './authInfo';
+import { BasicInterceptor } from './basicInterceptor';
+import { Negotiator } from './negotiate';
 
-const oauthTTL: number = 45 * Interval.MINUTE;
-const serverTTL: number = Interval.FOREVER;
-const GRACE_PERIOD = 10 * Interval.MINUTE;
+const oauthTTL: number = 45 * Time.MINUTES;
+const serverTTL: number = Time.FOREVER;
+const GRACE_PERIOD = 10 * Time.MINUTES;
 
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -133,12 +134,14 @@ export class ClientManager implements Disposable {
                 };
             } else {
                 result = {
-                    repositories: isBasicAuthInfo(info)
-                        ? new ServerRepositoriesApi(this.createBasicHTTPClient(site, info.username, info.password))
-                        : undefined!,
-                    pullrequests: isBasicAuthInfo(info)
-                        ? new ServerPullRequestApi(this.createBasicHTTPClient(site, info.username, info.password))
-                        : undefined!,
+                    repositories:
+                        isBasicAuthInfo(info) || isPATAuthInfo(info)
+                            ? new ServerRepositoriesApi(this.createHTTPClient(site, info))
+                            : undefined!,
+                    pullrequests:
+                        isBasicAuthInfo(info) || isPATAuthInfo(info)
+                            ? new ServerPullRequestApi(this.createHTTPClient(site, info))
+                            : undefined!,
                     issues: undefined,
                     pipelines: undefined,
                 };
@@ -216,10 +219,21 @@ export class ClientManager implements Disposable {
         );
     }
 
-    private createBasicHTTPClient(site: DetailedSiteInfo, username: string, password: string): HTTPClient {
+    private createHTTPClient(site: DetailedSiteInfo, info: AuthInfo): HTTPClient {
+        let auth = '';
+        if (isBasicAuthInfo(info)) {
+            Logger.info('Using Username and Password Auth');
+            auth = `Basic ${Buffer.from(info.username + ':' + info.password).toString('base64')}`;
+        } else if (isPATAuthInfo(info)) {
+            Logger.info('Using PAT Auth');
+            auth = `Bearer ${info.token}`;
+        } else {
+            Logger.warn('Auth format not recognized');
+        }
+
         return new HTTPClient(
             site.baseApiUrl,
-            `Basic ${Buffer.from(username + ':' + password).toString('base64')}`,
+            auth,
             getAgent(site),
             async (response: AxiosResponse): Promise<Error> => {
                 let errString = 'Unknown error';
@@ -239,7 +253,7 @@ export class ClientManager implements Disposable {
     }
 
     private keyForSite(site: DetailedSiteInfo): string {
-        return site.credentialId;
+        return `${site.credentialId} - ${site.baseApiUrl}`;
     }
 
     private async createClient<T>(site: DetailedSiteInfo, factory: (info: AuthInfo) => any): Promise<T | undefined> {

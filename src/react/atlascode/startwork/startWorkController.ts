@@ -1,6 +1,7 @@
 import { defaultStateGuard, ReducerAction } from '@atlassianlabs/guipi-core-controller';
 import { Transition } from '@atlassianlabs/jira-pi-common-models';
 import React, { useCallback, useMemo, useReducer } from 'react';
+
 import { WorkspaceRepo } from '../../../bitbucket/model';
 import { CommonActionType } from '../../../lib/ipc/fromUI/common';
 import { StartWorkAction, StartWorkActionType } from '../../../lib/ipc/fromUI/startWork';
@@ -30,13 +31,14 @@ export interface StartWorkControllerApi {
         sourceBranch: Branch,
         targetBranch: string,
         upstream: string,
+        pushBranchToRemote: boolean,
     ) => Promise<{ transistionStatus?: string; branch?: string; upstream?: string }>;
     closePage: () => void;
     openJiraIssue: () => void;
     openSettings: (section?: ConfigSection, subsection?: ConfigSubSection) => void;
 }
 
-export const emptyApi: StartWorkControllerApi = {
+const emptyApi: StartWorkControllerApi = {
     postMessage: () => {},
     refresh: () => {},
     openLink: () => {},
@@ -61,21 +63,19 @@ const emptyState: StartWorkState = {
     customPrefixes: [],
 };
 
-export enum StartWorkUIActionType {
+enum StartWorkUIActionType {
     Init = 'init',
     Loading = 'loading',
 }
 
-export type StartWorkUIAction =
+type StartWorkUIAction =
     | ReducerAction<StartWorkUIActionType.Init, { data: StartWorkInitMessage }>
     | ReducerAction<StartWorkUIActionType.Loading, {}>;
-
-export type StartWorkChanges = { [key: string]: any };
 
 function reducer(state: StartWorkState, action: StartWorkUIAction): StartWorkState {
     switch (action.type) {
         case StartWorkUIActionType.Init: {
-            console.log(`JS-1324 start work controller init repo count: ${action.data.repoData.length}`);
+            console.log(`JS-1324 start work controller init repo count: ${action.data.repoData?.length}`);
             const newstate = {
                 ...state,
                 ...action.data,
@@ -122,6 +122,7 @@ export function useStartWorkController(): [StartWorkState, StartWorkControllerAp
             sourceBranch: Branch,
             targetBranch: string,
             upstream: string,
+            pushBranchToRemote: boolean,
         ): Promise<StartWorkResponseMessage> => {
             return new Promise<StartWorkResponseMessage>((resolve, reject) => {
                 (async () => {
@@ -136,6 +137,7 @@ export function useStartWorkController(): [StartWorkState, StartWorkControllerAp
                                 sourceBranch,
                                 targetBranch,
                                 upstream,
+                                pushBranchToRemote,
                             },
                             StartWorkMessageType.StartWorkResponse,
                             ConnectionTimeout,

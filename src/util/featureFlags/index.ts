@@ -1,4 +1,4 @@
-import { FeatureFlagClient } from './client';
-import { Features } from './features';
+import { FeatureFlagClient, FeatureFlagClientInitError } from './client';
+import { Experiments, Features } from './features';
 
-export { FeatureFlagClient, Features };
+export { FeatureFlagClient, FeatureFlagClientInitError, Features, Experiments };

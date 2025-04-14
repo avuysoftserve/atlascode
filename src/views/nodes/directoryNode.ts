@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+
 import { PRDirectory } from '../pullrequest/diffViewHelper';
 import { AbstractBaseNode } from './abstractBaseNode';
 import { PullRequestFilesNode } from './pullRequestFilesNode';
@@ -16,11 +17,11 @@ export class DirectoryNode extends AbstractBaseNode {
     }
 
     async getChildren(element?: AbstractBaseNode): Promise<AbstractBaseNode[]> {
-        let directoryNodes: DirectoryNode[] = Array.from(
+        const directoryNodes: DirectoryNode[] = Array.from(
             this.directoryData.subdirs.values(),
             (subdir) => new DirectoryNode(subdir),
         );
-        let fileNodes: AbstractBaseNode[] = this.directoryData.files.map(
+        const fileNodes: AbstractBaseNode[] = this.directoryData.files.map(
             (diffViewArg) => new PullRequestFilesNode(diffViewArg),
         );
         return fileNodes.concat(directoryNodes);

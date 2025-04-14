@@ -1,4 +1,5 @@
 import { defaultActionGuard } from '@atlassianlabs/guipi-core-controller';
+
 import { ProductBitbucket } from '../../../../atlclients/authInfo';
 import { BitbucketSite } from '../../../../bitbucket/model';
 import { AnalyticsApi } from '../../../analyticsApi';
@@ -18,7 +19,10 @@ import { MessagePoster, WebviewController } from '../webviewController';
 import { CreateBitbucketIssueActionApi } from './createbitbucketIssueActionApi';
 
 export class CreateBitbucketIssueWebviewController implements WebviewController<BitbucketSite> {
-    private isRefreshing: boolean;
+    public readonly requiredFeatureFlags = [];
+    public readonly requiredExperiments = [];
+
+    private isRefreshing = false;
 
     constructor(
         private site: BitbucketSite,
@@ -28,6 +32,8 @@ export class CreateBitbucketIssueWebviewController implements WebviewController<
         private logger: Logger,
         private analytics: AnalyticsApi,
     ) {}
+
+    public onShown(): void {}
 
     public title(): string {
         return 'Create Bitbucket Issue';
@@ -53,7 +59,7 @@ export class CreateBitbucketIssueWebviewController implements WebviewController<
                 site: this.site,
             });
         } catch (e) {
-            let err = new Error(`error updating the view: ${e}`);
+            const err = new Error(`error updating the view: ${e}`);
             this.logger.error(err);
             this.postMessage({ type: CommonMessageType.Error, reason: formatError(e) });
         } finally {
@@ -107,6 +113,7 @@ export class CreateBitbucketIssueWebviewController implements WebviewController<
                 break;
             }
 
+            case CommonActionType.SendAnalytics:
             case CommonActionType.CopyLink:
             case CommonActionType.OpenJiraIssue:
             case CommonActionType.Cancel:

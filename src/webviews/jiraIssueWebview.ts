@@ -10,10 +10,11 @@ import {
     readSearchResults,
     User,
 } from '@atlassianlabs/jira-pi-common-models';
-import { FieldValues, ValueType } from '@atlassianlabs/jira-pi-meta-models/ui-meta';
+import { FieldValues, ValueType } from '@atlassianlabs/jira-pi-meta-models';
+import { decode } from 'base64-arraybuffer-es6';
 import FormData from 'form-data';
-import * as fs from 'fs';
 import { commands, env } from 'vscode';
+
 import { issueCreatedEvent, issueUpdatedEvent, issueUrlCopiedEvent } from '../analytics';
 import { DetailedSiteInfo, emptySiteInfo, Product, ProductJira } from '../atlclients/authInfo';
 import { clientForSite } from '../bitbucket/bbUtils';
@@ -146,7 +147,7 @@ export class JiraIssueWebview
             this._editUIData.recentPullRequests = [];
             this._editUIData.currentUser = emptyUser;
 
-            let msg = this._editUIData;
+            const msg = this._editUIData;
 
             msg.type = 'update';
 
@@ -159,7 +160,7 @@ export class JiraIssueWebview
             this.updateVoters();
             this.updateRelatedPullRequests();
         } catch (e) {
-            let err = new Error(`error updating issue: ${e}`);
+            const err = new Error(`error updating issue: ${e}`);
             Logger.error(err);
             this.postMessage({ type: 'error', reason: this.formatErrorReason(e) });
         } finally {
@@ -247,7 +248,7 @@ export class JiraIssueWebview
         const client = await Container.clientManager.jiraClient(this._issue.siteDetails);
         await client.editIssue(this._issue!.key, { [fieldKey]: this._editUIData.fieldValues[fieldKey] });
 
-        let optionMessage = {
+        const optionMessage = {
             type: 'optionCreated',
             fieldValues: { [fieldKey]: this._editUIData.fieldValues[fieldKey] },
             selectFieldOptions: { [fieldKey]: this._editUIData.selectFieldOptions[fieldKey] },
@@ -321,7 +322,8 @@ export class JiraIssueWebview
                             });
                         });
 
-                        commands.executeCommand(Commands.RefreshJiraExplorer);
+                        commands.executeCommand(Commands.RefreshAssignedWorkItemsExplorer);
+                        commands.executeCommand(Commands.RefreshCustomJqlExplorer);
                     } catch (e) {
                         Logger.error(new Error(`error updating issue: ${e}`));
                         this.postMessage({
@@ -401,7 +403,7 @@ export class JiraIssueWebview
                     if (isCreateIssue(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             const resp = await client.createIssue(msg.issueData);
 
                             const createdIssue = await client.getIssue(resp.key, IssueLinkIssueKeys, '');
@@ -419,7 +421,9 @@ export class JiraIssueWebview
                             issueCreatedEvent(msg.site, resp.key).then((e) => {
                                 Container.analyticsClient.sendTrackEvent(e);
                             });
-                            commands.executeCommand(Commands.RefreshJiraExplorer);
+
+                            commands.executeCommand(Commands.RefreshAssignedWorkItemsExplorer);
+                            commands.executeCommand(Commands.RefreshCustomJqlExplorer);
                         } catch (e) {
                             Logger.error(new Error(`error creating issue: ${e}`));
                             this.postMessage({
@@ -435,7 +439,7 @@ export class JiraIssueWebview
                     if (isCreateIssueLink(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             const resp = await client.createIssueLink(this._issue.key, msg.issueLinkData);
 
                             this._editUIData.fieldValues['issuelinks'] = resp;
@@ -456,7 +460,9 @@ export class JiraIssueWebview
                             ).then((e) => {
                                 Container.analyticsClient.sendTrackEvent(e);
                             });
-                            commands.executeCommand(Commands.RefreshJiraExplorer);
+
+                            commands.executeCommand(Commands.RefreshAssignedWorkItemsExplorer);
+                            commands.executeCommand(Commands.RefreshCustomJqlExplorer);
                         } catch (e) {
                             Logger.error(new Error(`error creating issue link: ${e}`));
                             this.postMessage({
@@ -472,7 +478,7 @@ export class JiraIssueWebview
                     if (isDeleteByIDAction(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
 
                             // We wish we could just call the delete issuelink endpoint, but it doesn't support OAuth 2.0
                             //await client.deleteIssuelink(msg.objectWithId.id);
@@ -499,7 +505,10 @@ export class JiraIssueWebview
                                     nonce: msg.nonce,
                                 },
                             });
-                            commands.executeCommand(Commands.RefreshJiraExplorer);
+
+                            commands.executeCommand(Commands.RefreshAssignedWorkItemsExplorer);
+                            commands.executeCommand(Commands.RefreshCustomJqlExplorer);
+
                             issueUpdatedEvent(
                                 this._issue.siteDetails,
                                 this._issue.key,
@@ -524,7 +533,7 @@ export class JiraIssueWebview
                     if (isCreateWorklog(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             let queryParams: any = { adjustEstimate: msg.worklogData.adjustEstimate };
                             delete msg.worklogData.adjustEstimate;
                             if (queryParams.adjustEstimate === 'new') {
@@ -565,7 +574,7 @@ export class JiraIssueWebview
                     if (isUpdateWatcherAction(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             await client.addWatcher(msg.issueKey, msg.watcher.accountId);
 
                             if (
@@ -610,7 +619,7 @@ export class JiraIssueWebview
                     if (isUpdateWatcherAction(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             await client.removeWatcher(msg.issueKey, msg.watcher.accountId);
                             if (
                                 !this._editUIData.fieldValues['watches'] ||
@@ -660,7 +669,7 @@ export class JiraIssueWebview
                     if (isUpdateVoteAction(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             await client.addVote(msg.issueKey);
 
                             if (
@@ -703,7 +712,7 @@ export class JiraIssueWebview
                     if (isUpdateVoteAction(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             await client.removeVote(msg.issueKey);
                             if (
                                 !this._editUIData.fieldValues['votes'] ||
@@ -750,16 +759,18 @@ export class JiraIssueWebview
                     if (isAddAttachmentsAction(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
-
-                            let formData = new FormData();
+                            const formData = new FormData();
                             msg.files.forEach((file: any) => {
-                                formData.append('file', fs.createReadStream(file.path), {
+                                if (!file.fileContent) {
+                                    throw new Error(`Unable to read the file '${file.name}'`);
+                                }
+                                formData.append('file', Buffer.from(decode(file.fileContent)), {
                                     filename: file.name,
                                     contentType: file.type,
                                 });
                             });
 
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             const resp = await client.addAttachments(msg.issueKey, formData);
 
                             if (
@@ -803,7 +814,7 @@ export class JiraIssueWebview
                     if (isDeleteByIDAction(msg)) {
                         handled = true;
                         try {
-                            let client = await Container.clientManager.jiraClient(msg.site);
+                            const client = await Container.clientManager.jiraClient(msg.site);
                             await client.deleteAttachment(msg.objectWithId.id);
 
                             if (
@@ -916,8 +927,8 @@ export class JiraIssueWebview
                                 ),
                             );
                             // Prefix base URL for a relative URL
-                            const href = msg.url.startsWith('/secure/attachment')
-                                ? new URL(baseApiUrl + msg.url)
+                            const href = msg.url.startsWith('/')
+                                ? new URL(baseApiUrl.href + msg.url)
                                 : new URL(msg.url);
                             // Skip fetching external images (that do not belong to the site)
                             if (href.hostname !== baseApiUrl.hostname) {
@@ -944,7 +955,7 @@ export class JiraIssueWebview
                                 imgData: imgData,
                                 nonce: msg.nonce,
                             });
-                        } catch (e) {
+                        } catch {
                             Logger.error(new Error(`error fetching image: ${msg.url}`));
                             this.postMessage({
                                 type: 'getImageDone',

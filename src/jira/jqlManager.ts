@@ -1,6 +1,7 @@
 import PQueue from 'p-queue/dist';
 import { v4 } from 'uuid';
-import { ConfigurationChangeEvent, ConfigurationTarget, Disposable, Event, EventEmitter } from 'vscode';
+import { ConfigurationChangeEvent, ConfigurationTarget, Disposable } from 'vscode';
+
 import { DetailedSiteInfo, ProductJira } from '../atlclients/authInfo';
 import { configuration } from '../config/configuration';
 import { JQLEntry } from '../config/model';
@@ -15,9 +16,18 @@ export class JQLManager extends Disposable {
     private _disposable: Disposable;
     private _queue = new PQueue({ concurrency: 1 });
 
-    private _onDidJQLChange = new EventEmitter<JQLUpdateEvent>();
-    public get onDidJQLChange(): Event<JQLUpdateEvent> {
-        return this._onDidJQLChange.event;
+    // In this PR: https://github.com/atlassian/atlascode/pull/169
+    // we have introduced a new field in DetailedSiteInfo that is populated at auth time.
+    // For those who already have this data saved before the introduction of the new logic,
+    // we need to backfill this field to avoid constructing a wrong default JQL query.
+    public static async backFillOldDetailedSiteInfos(): Promise<void> {
+        for (const site of Container.siteManager.getSitesAvailable(ProductJira)) {
+            try {
+                await JQLManager.backFillOldDetailedSiteInfo(site);
+            } catch (error) {
+                Logger.error(error, `Error backfilling site ${site.id}`);
+            }
+        }
     }
 
     constructor() {
@@ -26,9 +36,18 @@ export class JQLManager extends Disposable {
         this._disposable = Disposable.from(configuration.onDidChange(this.onConfigurationChanged, this));
     }
 
+    private static async backFillOldDetailedSiteInfo(site: DetailedSiteInfo) {
+        if (site.hasResolutionField === undefined) {
+            const client = await Container.clientManager.jiraClient(site);
+            const fields = await client.getFields();
+            site.hasResolutionField = fields.some((f) => f.id === 'resolution');
+
+            Container.siteManager.addOrUpdateSite(site);
+        }
+    }
+
     dispose() {
         this._disposable.dispose();
-        this._onDidJQLChange.dispose();
     }
 
     public async updateFilters() {
@@ -73,6 +92,19 @@ export class JQLManager extends Disposable {
         return Container.config.jira.jqlList.filter((entry) => entry.enabled);
     }
 
+    public getAllDefaultJQLEntries(): JQLEntry[] {
+        const sites = Container.siteManager.getSitesAvailable(ProductJira);
+        return sites.map((site) => this.defaultJQLEntryForJiraExplorer(site));
+    }
+
+    public getCustomJQLEntries(): JQLEntry[] {
+        const enabledEntries = this.enabledJQLEntries();
+        return enabledEntries.filter((entry) => {
+            const site = Container.siteManager.getSiteForId(ProductJira, entry.siteId);
+            return site && entry.query !== this.defaultJQLQueryForSite(site);
+        });
+    }
+
     public async initializeJQL(sites: DetailedSiteInfo[]) {
         this._queue.add(async () => {
             const allList = Container.config.jira.jqlList;
@@ -80,8 +112,7 @@ export class JQLManager extends Disposable {
             for (const site of sites) {
                 if (!allList.some((j) => j.siteId === site.id)) {
                     // only initialize if there are no jql entries for this site
-                    const newEntry = await this.defaultJQLForSite(site);
-                    allList.push(newEntry);
+                    allList.push(this.defaultJQLEntryForSiteStorage(site));
                 }
             }
 
@@ -89,20 +120,29 @@ export class JQLManager extends Disposable {
         });
     }
 
-    async defaultJQLForSite(site: DetailedSiteInfo): Promise<JQLEntry> {
-        const client = await Container.clientManager.jiraClient(site);
+    private defaultJQLQueryForSite(site: DetailedSiteInfo): string {
+        return site.hasResolutionField
+            ? 'assignee = currentUser() AND resolution = Unresolved ORDER BY lastViewed DESC'
+            : 'assignee = currentUser() ORDER BY lastViewed DESC';
+    }
 
-        const fields = await client.getFields();
-        const resolutionEnabled = fields.some((f) => f.id === 'resolution');
-        const resolutionClause = resolutionEnabled ? 'AND resolution = Unresolved ' : '';
-
-        const query = `assignee = currentUser() ${resolutionClause}ORDER BY lastViewed DESC`;
-
+    private defaultJQLEntryForSiteStorage(site: DetailedSiteInfo): JQLEntry {
         return {
-            id: v4(),
+            id: v4(), // In Custom JQL filters we can have multiple queries per site, so we need something unique
             enabled: true,
             name: `My ${site.name} Issues`,
-            query: query,
+            query: this.defaultJQLQueryForSite(site),
+            siteId: site.id,
+            monitor: true,
+        };
+    }
+
+    private defaultJQLEntryForJiraExplorer(site: DetailedSiteInfo): JQLEntry {
+        return {
+            id: site.id, // in Assigned Jira Work Items we only have 1 query per site, so this id works well
+            enabled: true,
+            name: 'My issues',
+            query: 'assignee = currentUser() AND StatusCategory != Done ORDER BY updated DESC',
             siteId: site.id,
             monitor: true,
         };

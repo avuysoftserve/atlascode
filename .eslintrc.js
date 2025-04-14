@@ -20,12 +20,13 @@ module.exports = {
         'import',
         'prettier',
         '@stylistic/js',
+	'simple-import-sort',
     ],
     rules: {
         'prettier/prettier': 'error',
         'react/jsx-filename-extension': [2, { extensions: ['.js', '.jsx', '.ts', '.tsx'] }],
         'react-hooks/rules-of-hooks': 'error',
-        'react-hooks/exhaustive-deps': 'warn',
+        'react-hooks/exhaustive-deps': 'error',
         '@typescript-eslint/await-thenable': 'error',
         '@typescript-eslint/naming-convention': [
             'error',
@@ -36,7 +37,7 @@ module.exports = {
         ],
         'import/no-extraneous-dependencies': [
             'error',
-            { devDependencies: ['**/webpack.*', '**/test/*', '**/*.test.js', '**/*.spec.js'] },
+            { devDependencies: ['**/webpack.*', '**/test/*', '**/*.test.js', '**/*.spec.js', '**/*.test.ts'] },
         ],
         'no-restricted-imports': [
             'error',
@@ -53,12 +54,27 @@ module.exports = {
                 ],
             },
         ],
+        "no-unused-vars": ["error", {
+            "vars": "all",
+            "args": "none",
+            "caughtErrors": "all",
+            "ignoreRestSiblings": false,
+        }],
         'brace-style': 'off',
+        'no-throw-literal': 'error',
+        'no-var': 'error',
+        'prefer-const': 'error',
+        'no-cond-assign': 'error',
+        'no-multi-assign': 'error',
+        'no-unused-expressions': ['error', {
+            "allowShortCircuit": true,
+            "allowTernary": true,
+        }],
         curly: 'error',
         eqeqeq: ['error', 'always'],
         semi: 'off',
         '@stylistic/js/semi': ['error', 'always'],
-        'no-throw-literal': 'error',
+	'simple-import-sort/imports': 'error',
     },
     settings: {
         react: {

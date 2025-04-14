@@ -1,5 +1,6 @@
 import path from 'path';
 import * as vscode from 'vscode';
+
 import { FileStatus } from '../../bitbucket/model';
 import { Commands } from '../../commands';
 import { configuration } from '../../config/configuration';
@@ -14,12 +15,12 @@ export class PullRequestFilesNode extends AbstractBaseNode {
     }
 
     async getTreeItem(): Promise<vscode.TreeItem> {
-        let itemData = this.diffViewData.fileDisplayData;
+        const itemData = this.diffViewData.fileDisplayData;
         let fileDisplayString = itemData.fileDisplayName;
         if (configuration.get<boolean>('bitbucket.explorer.nestFilesEnabled')) {
             fileDisplayString = path.basename(itemData.fileDisplayName);
         }
-        let item = new vscode.TreeItem(
+        const item = new vscode.TreeItem(
             `${itemData.numberOfComments > 0 ? '💬 ' : ''}${fileDisplayString}`,
             vscode.TreeItemCollapsibleState.None,
         );

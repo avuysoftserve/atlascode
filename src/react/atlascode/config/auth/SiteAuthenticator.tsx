@@ -1,14 +1,12 @@
-import { Box, Button, Grid, Typography } from '@material-ui/core';
+import { Box, Button, Grid } from '@material-ui/core';
 import React, { memo, useCallback, useContext } from 'react';
 
-import { AuthDialogControllerContext } from './useAuthDialog';
-import { CloudAuthButton } from './CloudAuthButton';
-import DomainIcon from '@material-ui/icons/Domain';
 import { Product } from '../../../../atlclients/authInfo';
-import { SiteList } from './SiteList';
 import { SiteWithAuthInfo } from '../../../../lib/ipc/toUI/config';
-import { Features } from 'src/util/featureFlags';
-import { CommonMessageType } from 'src/lib/ipc/toUI/common';
+import { ConfigControllerContext } from '../configController';
+import { CloudAuthButton } from './CloudAuthButton';
+import { SiteList } from './SiteList';
+import { AuthDialogControllerContext } from './useAuthDialog';
 
 type SiteAuthenticatorProps = {
     product: Product;
@@ -19,9 +17,14 @@ type SiteAuthenticatorProps = {
 export const SiteAuthenticator: React.FunctionComponent<SiteAuthenticatorProps> = memo(
     ({ product, isRemote, sites }) => {
         const authDialogController = useContext(AuthDialogControllerContext);
+        const configController = useContext(ConfigControllerContext);
         const openProductAuth = useCallback(() => {
             authDialogController.openDialog(product, undefined);
         }, [authDialogController, product]);
+
+        const remoteAuth = useCallback(() => {
+            configController.remoteLogin();
+        }, [configController]);
 
         const handleEdit = useCallback(
             (swa: SiteWithAuthInfo) => {
@@ -30,63 +33,83 @@ export const SiteAuthenticator: React.FunctionComponent<SiteAuthenticatorProps> 
             [authDialogController, product],
         );
 
-        const [useNewAuth, setUseNewAuth] = React.useState(false);
-        React.useEffect(() => {
-            window.addEventListener('message', (event) => {
-                const message = event.data;
-                if (message.command === CommonMessageType.UpdateFeatureFlags) {
-                    const featureValue = message.featureFlags[Features.EnableRemoteAuthentication];
-                    console.log(
-                        `FeatureGates: received by SiteAuthenticator - ${Features.EnableRemoteAuthentication} -> ${featureValue}`,
-                    );
-                    setUseNewAuth(featureValue);
-                }
-            });
-        }, []);
+        // TODO AXON-46: feature flag this when closer to release
+        const [isRemoteAuthButtonVisible] = React.useState(false);
 
         return (
             <Box flexGrow={1}>
                 <Grid container direction="column" spacing={2}>
-                    <Grid item hidden={isRemote === false || useNewAuth}>
-                        <Typography>
-                            <Box component="span" fontWeight="fontWeightBold">
-                                ⚠️ Authentication cannot be done while running remotely
-                            </Box>
-                        </Typography>
-                        <Typography>
-                            To authenticate with a new site open this (or another) workspace locally. Accounts added
-                            when running locally <em>will</em> be accessible during remote development.
-                        </Typography>
-                    </Grid>
-                    <Grid item style={{ cursor: isRemote && !useNewAuth ? 'not-allowed' : 'default' }}>
-                        <Grid
-                            container
-                            direction="column"
-                            spacing={2}
-                            style={{
-                                pointerEvents: isRemote && !useNewAuth ? 'none' : 'inherit',
-                                opacity: isRemote && !useNewAuth ? 0.6 : 'inherit',
-                            }}
-                        >
-                            <Grid item>
-                                <Grid container spacing={2}>
-                                    <Grid item>
-                                        <CloudAuthButton product={product} />
-                                    </Grid>
-                                    <Grid item>
-                                        <Button color="primary" startIcon={<DomainIcon />} onClick={openProductAuth}>
-                                            {`Add Custom ${product.name} Site`}
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </Grid>
-                            <Grid item>
-                                <SiteList product={product} sites={sites} editServer={handleEdit} />
-                            </Grid>
-                        </Grid>
-                    </Grid>
+                    <AuthContainer
+                        isRemote={isRemote}
+                        product={product}
+                        openProductAuth={openProductAuth}
+                        sites={sites}
+                        handleEdit={handleEdit}
+                        remoteAuth={remoteAuth}
+                        isRemoteAuthButtonVisible={isRemoteAuthButtonVisible}
+                    />
                 </Grid>
             </Box>
         );
     },
+);
+
+interface AuthContainerProps {
+    isRemote: boolean;
+    product: Product;
+    openProductAuth: () => void;
+    sites: SiteWithAuthInfo[];
+    handleEdit: (swa: SiteWithAuthInfo) => void;
+    remoteAuth: () => void;
+    isRemoteAuthButtonVisible: boolean;
+}
+
+const AuthContainer = ({
+    isRemote,
+    product,
+    openProductAuth,
+    sites,
+    handleEdit,
+    remoteAuth,
+    isRemoteAuthButtonVisible,
+}: AuthContainerProps) => (
+    <React.Fragment>
+        <Grid item>
+            <Grid container direction="column" spacing={2}>
+                <Grid item>
+                    <Grid container spacing={2}>
+                        {!isRemote && (
+                            <React.Fragment>
+                                <Grid item>
+                                    <CloudAuthButton product={product} />
+                                </Grid>
+                                <Grid item>
+                                    <Button color="primary" onClick={openProductAuth}>
+                                        {`Other options...`}
+                                    </Button>
+                                </Grid>
+                                {isRemoteAuthButtonVisible && (
+                                    <Grid item>
+                                        <Button onClick={remoteAuth}>Remote Auth</Button>
+                                    </Grid>
+                                )}
+                            </React.Fragment>
+                        )}
+                        {isRemote && (
+                            <React.Fragment>
+                                <Grid item>
+                                    <Button color="primary" variant="contained" onClick={openProductAuth}>
+                                        {`Login to ${product.name}`}
+                                    </Button>
+                                </Grid>
+                            </React.Fragment>
+                        )}
+                    </Grid>
+                </Grid>
+                <Grid item>
+                    <SiteList product={product} sites={sites} editServer={handleEdit} />
+                </Grid>
+            </Grid>
+        </Grid>
+    </React.Fragment>
 );

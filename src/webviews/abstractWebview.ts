@@ -11,11 +11,13 @@ import {
     WebviewPanelOnDidChangeViewStateEvent,
     window,
 } from 'vscode';
+
 import { pmfClosed, pmfSnoozed, pmfSubmitted, viewScreenEvent } from '../analytics';
 import { DetailedSiteInfo, Product } from '../atlclients/authInfo';
 import { Container } from '../container';
 import { submitLegacyJSDPMF } from '../feedback/pmfJSDSubmitter';
 import { isAction, isAlertable, isPMFSubmitAction } from '../ipc/messaging';
+import { CommonActionType } from '../lib/ipc/fromUI/common';
 import { iconSet, Resources } from '../resources';
 import { OnlineInfoEvent } from '../util/online';
 import { UIWebsocket } from '../ws';
@@ -206,6 +208,13 @@ export abstract class AbstractReactWebview implements ReactWebview {
                 }
             }
         }
+
+        // Special case for analytics which are normally routed through the new IPC system
+        if (a?.type === CommonActionType.SendAnalytics && a?.errorInfo) {
+            Container.analyticsApi.fireUIErrorEvent(a.errorInfo);
+            return true;
+        }
+
         return false;
     }
 

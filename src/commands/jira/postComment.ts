@@ -1,4 +1,5 @@
 import { Comment, CommentVisibility, IssueKeyAndSite } from '@atlassianlabs/jira-pi-common-models';
+
 import { issueCommentEvent } from '../../analytics';
 import { DetailedSiteInfo } from '../../atlclients/authInfo';
 import { Container } from '../../container';
@@ -9,7 +10,7 @@ export async function postComment(
     commentId?: string,
     restriction?: CommentVisibility,
 ): Promise<Comment> {
-    let client = await Container.clientManager.jiraClient(issue.siteDetails);
+    const client = await Container.clientManager.jiraClient(issue.siteDetails);
 
     const resp =
         commentId === undefined

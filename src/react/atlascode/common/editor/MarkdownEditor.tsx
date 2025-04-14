@@ -20,6 +20,7 @@ import { Schema } from 'prosemirror-model';
 import { EditorState, Plugin, PluginKey } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import { User } from '../../../../bitbucket/model';
 
 function markInputRule(regexp: RegExp, markType: any, getAttrs: any) {
@@ -80,7 +81,7 @@ const buildInputRules = (schema: any) => {
     return rules;
 };
 
-var schema = new Schema({
+const schema = new Schema({
     nodes: addMentionNodes(markdownSchema.spec.nodes),
     marks: markdownSchema.spec.marks,
 });
@@ -105,7 +106,7 @@ const mdParser = new MarkdownParser(schema, defaultMarkdownParser.tokenizer, {
  * IMPORTANT: outer div's "suggestion-item-list" class is mandatory. The plugin uses this class for querying.
  * IMPORTANT: inner div's "suggestion-item" class is mandatory too for the same reasons
  */
-var getMentionSuggestionsHTML = (items: any[]) =>
+const getMentionSuggestionsHTML = (items: any[]) =>
     '<div class="suggestion-item-list">' +
     items.map((i) => '<div class="suggestion-item">' + i.name + '</div>').join('') +
     '</div>';
@@ -177,7 +178,7 @@ export const MarkdownEditor: React.FC<PropsType> = (props: PropsType) => {
             setContent('');
         }
         props.onCancel?.();
-    }, [enableRichTextEditor, props.onCancel]);
+    }, [enableRichTextEditor, props.onCancel]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleSave = useCallback(async () => {
         const mdContent: string = enableRichTextEditor ? mdSerializer.serialize(view.current!.state.doc) : content;

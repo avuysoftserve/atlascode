@@ -86,7 +86,7 @@ export function useFormValidation<FieldTypes>(watch?: Partial<FieldTypes>): Form
     const watchDefaults = useRef<Partial<FieldTypes>>(watch ? watch : {});
     const watches = useRef<Partial<FieldTypes>>(watch ? watch : {});
     const errors = useRef<Partial<Errors<FieldTypes>>>({});
-    const [_toggle, reRender] = useState(false);
+    const [, reRender] = useState(false);
 
     const handleChange = useConstant(() => async (e: Event) => {
         const field = fields[(e.target as InputElement).name];
@@ -95,7 +95,7 @@ export function useFormValidation<FieldTypes>(watch?: Partial<FieldTypes>): Form
         if (field) {
             if (Object.keys(watches.current).includes(field.inputRef.name)) {
                 needsReRender = true;
-                if (typeof watches.current[field.inputRef.name] === 'boolean') {
+                if (typeof (watches.current as any)[field.inputRef.name] === 'boolean') {
                     watches.current = {
                         ...watches.current,
                         [field.inputRef.name]: (field.inputRef as HTMLInputElement).checked,
@@ -110,13 +110,13 @@ export function useFormValidation<FieldTypes>(watch?: Partial<FieldTypes>): Form
 
             if (field.validator) {
                 const errString = await field.validator(field.inputRef.name, field.inputRef.value);
-                if (errors.current[field.inputRef.name] !== errString) {
+                if ((errors.current as any)[field.inputRef.name] !== errString) {
                     needsReRender = true;
 
                     if (errString) {
                         errors.current = { ...errors.current, [field.inputRef.name]: errString };
                     } else {
-                        delete errors.current[field.inputRef.name];
+                        delete (errors.current as any)[field.inputRef.name];
                     }
                 }
             }
@@ -136,7 +136,7 @@ export function useFormValidation<FieldTypes>(watch?: Partial<FieldTypes>): Form
                 }
 
                 //TODO: add an option to validate all fields before submitting.
-                let fieldValues: Partial<FieldTypes> = {};
+                const fieldValues: any = {};
                 try {
                     for (const field of Object.values<FieldDescriptor>(fields)) {
                         if (field) {
@@ -228,7 +228,7 @@ export function useFormValidation<FieldTypes>(watch?: Partial<FieldTypes>): Form
     }
 
     return {
-        register: useCallback(register, []),
+        register: useCallback(register, []), // eslint-disable-line react-hooks/exhaustive-deps
         watches: watches.current,
         errors: errors.current,
         handleSubmit,

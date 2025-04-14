@@ -1,6 +1,9 @@
 import * as React from 'react';
+import uuid from 'uuid';
+
 import { Action, LegacyPMFData } from '../../ipc/messaging';
 import { OnMessageEventPromise } from '../../util/reactpromise';
+import { ConnectionTimeout } from '../../util/time';
 import { darken, lighten, opacity } from './colors';
 
 interface VsCodeApi {
@@ -11,7 +14,6 @@ interface VsCodeApi {
 
 declare function acquireVsCodeApi(): VsCodeApi;
 
-export interface WebviewComponent<A extends Action, R, P = {}, S = {}> extends React.Component<P, S> {}
 // WebviewComponent is the base React component for creating a webview in vscode.
 // This handles comms between vscode and react.
 // Generic Types:
@@ -112,5 +114,21 @@ export abstract class WebviewComponent<A extends Action, R, P, S> extends React.
     ): Promise<any> {
         this._api.postMessage(send);
         return OnMessageEventPromise(waitForEvent, timeout, nonce);
+    }
+
+    protected async fetchImage(url: string): Promise<any> {
+        const nonce = uuid.v4();
+        return (
+            await this.postMessageWithEventPromise(
+                {
+                    action: 'getImage',
+                    nonce: nonce,
+                    url: url,
+                },
+                'getImageDone',
+                ConnectionTimeout,
+                nonce,
+            )
+        ).imgData;
     }
 }

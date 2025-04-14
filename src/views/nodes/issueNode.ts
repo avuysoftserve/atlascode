@@ -1,22 +1,23 @@
 import { isMinimalIssue, MinimalORIssueLink } from '@atlassianlabs/jira-pi-common-models';
 import * as vscode from 'vscode';
+
 import { DetailedSiteInfo } from '../../atlclients/authInfo';
 import { Commands } from '../../commands';
 import { AbstractBaseNode } from './abstractBaseNode';
 
-const IssueNodeContextValue = 'jiraIssue';
+const ISSUE_NODE_CONTEXT_VALUE = 'jiraIssue';
 
 export class IssueNode extends AbstractBaseNode {
     public issue: MinimalORIssueLink<DetailedSiteInfo>;
-
-    constructor(_issue: MinimalORIssueLink<DetailedSiteInfo>, parent: AbstractBaseNode | undefined) {
-        super(parent);
+    constructor(_issue: MinimalORIssueLink<DetailedSiteInfo>) {
+        super();
         this.issue = _issue;
     }
 
     getTreeItem(): vscode.TreeItem {
-        let title = isMinimalIssue(this.issue) && this.issue.isEpic ? this.issue.epicName : this.issue.summary;
-        let treeItem = new vscode.TreeItem(
+        const title = isMinimalIssue(this.issue) && this.issue.isEpic ? this.issue.epicName : this.issue.summary;
+
+        const treeItem = new vscode.TreeItem(
             `${this.issue.key} ${title}`,
             isMinimalIssue(this.issue) && (this.issue.subtasks.length > 0 || this.issue.epicChildren.length > 0)
                 ? vscode.TreeItemCollapsibleState.Expanded
@@ -24,7 +25,7 @@ export class IssueNode extends AbstractBaseNode {
         );
         treeItem.command = { command: Commands.ShowIssue, title: 'Show Issue', arguments: [this.issue] };
         treeItem.iconPath = vscode.Uri.parse(this.issue.issuetype.iconUrl);
-        treeItem.contextValue = IssueNodeContextValue;
+        treeItem.contextValue = ISSUE_NODE_CONTEXT_VALUE;
         treeItem.tooltip = `${this.issue.key} - ${this.issue.summary}\n\n${this.issue.priority.name}    |    ${this.issue.status.name}`;
         treeItem.resourceUri = vscode.Uri.parse(`${this.issue.siteDetails.baseLinkUrl}/browse/${this.issue.key}`);
         return treeItem;
@@ -35,7 +36,7 @@ export class IssueNode extends AbstractBaseNode {
             return element.getChildren();
         }
         if (isMinimalIssue(this.issue) && Array.isArray(this.issue.subtasks) && this.issue.subtasks.length > 0) {
-            return this.issue.subtasks.map((subtask) => new IssueNode(subtask, this));
+            return this.issue.subtasks.map((subtask) => new IssueNode(subtask));
         }
 
         if (
@@ -43,7 +44,7 @@ export class IssueNode extends AbstractBaseNode {
             Array.isArray(this.issue.epicChildren) &&
             this.issue.epicChildren.length > 0
         ) {
-            return this.issue.epicChildren.map((epicChild) => new IssueNode(epicChild, this));
+            return this.issue.epicChildren.map((epicChild) => new IssueNode(epicChild));
         }
         return [];
     }

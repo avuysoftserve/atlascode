@@ -1,6 +1,5 @@
-import { AccessibleResource, DetailedSiteInfo, OAuthProvider, ProductJira } from './authInfo';
-
 import { Authenticator } from './authenticator';
+import { AccessibleResource, DetailedSiteInfo, OAuthProvider, ProductJira } from './authInfo';
 import { CredentialManager } from './authStore';
 
 export class JiraAuthentictor implements Authenticator {
@@ -11,7 +10,7 @@ export class JiraAuthentictor implements Authenticator {
     ): Promise<DetailedSiteInfo[]> {
         let newSites: DetailedSiteInfo[] = [];
 
-        let apiUri = provider === OAuthProvider.JiraCloudStaging ? 'api.stg.atlassian.com' : 'api.atlassian.com';
+        const apiUri = provider === OAuthProvider.JiraCloudStaging ? 'api.stg.atlassian.com' : 'api.atlassian.com';
 
         //TODO: [VSCODE-505] call serverInfo endpoint when it supports OAuth
         //const baseUrlString = await getJiraCloudBaseUrl(`https://${apiUri}/ex/jira/${newResource.id}/rest/2`, authInfo.access);
@@ -30,6 +29,7 @@ export class JiraAuthentictor implements Authenticator {
                 isCloud: true,
                 userId: userId,
                 credentialId: credentialId,
+                hasResolutionField: false, // this field is populated in loginManager.ts
             };
         });
 

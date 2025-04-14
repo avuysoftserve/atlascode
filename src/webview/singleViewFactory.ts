@@ -9,14 +9,16 @@ import {
     WebviewPanelOnDidChangeViewStateEvent,
     window,
 } from 'vscode';
+
 import { Container } from '../container';
 import { AnalyticsApi } from '../lib/analyticsApi';
 import { CommonActionType } from '../lib/ipc/fromUI/common';
 import { CommonMessageType } from '../lib/ipc/toUI/common';
 import { WebviewController } from '../lib/webview/controller/webviewController';
+import { FeatureFlagClient } from '../util/featureFlags';
+import { ExperimentGateValues, Experiments, FeatureGateValues, Features } from '../util/featureFlags/features';
 import { UIWebsocket } from '../ws';
 import { VSCWebviewControllerFactory } from './vscWebviewControllerFactory';
-import { FeatureFlagClient } from 'src/util/featureFlags';
 
 // ReactWebview is the interface for all basic webviews.
 // It takes FD as a generic type parameter that represents the type of "Factory Data" that will be
@@ -116,24 +118,45 @@ export class SingleWebview<FD, R> implements ReactWebview<FD> {
                 this._panel.webview.cspSource,
             );
 
+            this._controller.onShown(this._panel);
+
             const { id, site, product } = this._controller.screenDetails();
             this._analyticsApi.fireViewScreenEvent(id, site, product);
         } else {
+            if (this._controller) {
+                this._controller.update(factoryData);
+                this._panel.title = this._controller.title();
+            }
+
             this._panel.webview.html = this._controllerFactory.webviewHtml(
                 this._extensionPath,
                 this._panel.webview.asWebviewUri(Uri.file(this._extensionPath)),
                 this._panel.webview.cspSource,
             );
             this._panel.reveal(column ? column : ViewColumn.Active); // , false);
-            if (this._controller) {
-                this._controller.update(factoryData);
-            }
         }
 
-        // Send feature gates to the panel in a message
-        const featureFlags = await FeatureFlagClient.evaluateFeatures();
-        console.log(`FeatureGates: sending ${JSON.stringify(featureFlags)}`);
-        this.postMessage({ command: CommonMessageType.UpdateFeatureFlags, featureFlags: featureFlags });
+        if (this._controller) {
+            // Send feature gates to the panel in a message
+            this.fireFeatureGates(this._controller.requiredFeatureFlags);
+            this.fireExperimentGates(this._controller.requiredExperiments);
+        }
+    }
+
+    private async fireFeatureGates(features: Features[]) {
+        if (features.length) {
+            const featureFlags = {} as FeatureGateValues;
+            features.forEach((x) => (featureFlags[x] = FeatureFlagClient.checkGate(x)));
+            this.postMessage({ command: CommonMessageType.UpdateFeatureFlags, featureFlags });
+        }
+    }
+
+    private async fireExperimentGates(experiments: Experiments[]) {
+        if (experiments.length) {
+            const experimentValues = {} as ExperimentGateValues;
+            experiments.forEach((x) => (experimentValues[x] = FeatureFlagClient.checkExperimentValue(x)));
+            this.postMessage({ command: CommonMessageType.UpdateExperimentValues, experimentValues });
+        }
     }
 
     private onViewStateChanged(e: WebviewPanelOnDidChangeViewStateEvent) {

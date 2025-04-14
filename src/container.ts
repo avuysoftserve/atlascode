@@ -1,79 +1,87 @@
-import { AtlascodeUriHandler, ONBOARDING_URL, SETTINGS_URL } from './uriHandler';
-import { BitbucketIssue, BitbucketSite, PullRequest, WorkspaceRepo } from './bitbucket/model';
-import { Disposable, ExtensionContext, UriHandler, env, workspace, UIKind } from 'vscode';
-import { IConfig, configuration } from './config/configuration';
+import { env, ExtensionContext, UIKind, window, workspace } from 'vscode';
 
-import { analyticsClient } from './analytics-node-client/src/client.min.js';
-import { AnalyticsClient } from './analytics-node-client/src/client.min.js';
-import { AuthStatusBar } from './views/authStatusBar';
-import { BitbucketContext } from './bitbucket/bbContext';
-import { BitbucketIssueAction } from './lib/ipc/fromUI/bbIssue';
-import { CancellationManager } from './lib/cancellation';
-import { CheckoutHelper } from './bitbucket/checkoutHelper';
-import { ClientManager } from './atlclients/clientManager';
-import { CommonActionMessageHandler } from './lib/webview/controller/common/commonActionMessageHandler';
-import { ConfigAction } from './lib/ipc/fromUI/config';
-import { ConfigTarget } from './lib/ipc/models/config';
-import { CreateBitbucketIssueAction } from './lib/ipc/fromUI/createBitbucketIssue';
-import { CreateIssueProblemsWebview } from './webviews/createIssueProblemsWebview';
-import { CreateIssueWebview } from './webviews/createIssueWebview';
+import { featureFlagClientInitializedEvent } from './analytics';
+import { AnalyticsClient, analyticsClient } from './analytics-node-client/src/client.min.js';
+import { ProductJira } from './atlclients/authInfo';
 import { CredentialManager } from './atlclients/authStore';
-import { ExplorerFocusManager } from './webview/ExplorerFocusManager';
-import { HelpExplorer } from './views/HelpExplorer';
-import { IssueHoverProviderManager } from './views/jira/issueHoverProviderManager';
+import { ClientManager } from './atlclients/clientManager';
+import { LoginManager } from './atlclients/loginManager';
+import { BitbucketContext } from './bitbucket/bbContext';
+import { BitbucketCheckoutHelper } from './bitbucket/checkoutHelper';
+import { CheckoutHelper } from './bitbucket/interfaces';
+import { BitbucketIssue, BitbucketSite, PullRequest, WorkspaceRepo } from './bitbucket/model';
+import { openPullRequest } from './commands/bitbucket/pullRequest';
+import { configuration, IConfig } from './config/configuration';
+import { ATLASCODE_TEST_HOST, ATLASCODE_TEST_USER_EMAIL } from './constants';
+import { PmfStats } from './feedback/pmfStats';
 import { JQLManager } from './jira/jqlManager';
-import { JiraActiveIssueStatusBar } from './views/jira/activeIssueStatusBar';
-import { JiraContext } from './views/jira/jiraContext';
-import { JiraIssueViewManager } from './webviews/jiraIssueViewManager';
 import { JiraProjectManager } from './jira/projectManager';
 import { JiraSettingsManager } from './jira/settingsManager';
-import { LoginManager } from './atlclients/loginManager';
-import { MultiWebview } from './webview/multiViewFactory';
+import { CancellationManager } from './lib/cancellation';
+import { BitbucketIssueAction } from './lib/ipc/fromUI/bbIssue';
+import { ConfigAction } from './lib/ipc/fromUI/config';
+import { CreateBitbucketIssueAction } from './lib/ipc/fromUI/createBitbucketIssue';
 import { OnboardingAction } from './lib/ipc/fromUI/onboarding';
-import { OnlineDetector } from './util/online';
-import { Pipeline } from './pipelines/model';
 import { PipelineSummaryAction } from './lib/ipc/fromUI/pipelineSummary';
-import { PipelineSummaryActionImplementation } from './webview/pipelines/pipelineSummaryActionImplementation';
-import { PipelineSummaryWebviewControllerFactory } from './webview/pipelines/pipelineSummaryWebviewControllerFactory';
-import { PipelinesExplorer } from './views/pipelines/PipelinesExplorer';
-import { PmfStats } from './feedback/pmfStats';
 import { PullRequestDetailsAction } from './lib/ipc/fromUI/pullRequestDetails';
-import { SectionChangeMessage } from './lib/ipc/toUI/config';
-import { SingleWebview } from './webview/singleViewFactory';
-import { SiteManager } from './siteManager';
 import { StartWorkAction } from './lib/ipc/fromUI/startWork';
+import { ConfigTarget } from './lib/ipc/models/config';
+import { SectionChangeMessage } from './lib/ipc/toUI/config';
 import { StartWorkIssueMessage } from './lib/ipc/toUI/startWork';
-import { StartWorkOnBitbucketIssueWebview } from './webviews/startWorkOnBitbucketIssueWebview';
-import { StartWorkOnIssueWebview } from './webviews/startWorkOnIssueWebview';
+import { CommonActionMessageHandler } from './lib/webview/controller/common/commonActionMessageHandler';
+import { Logger } from './logger';
+import { Pipeline } from './pipelines/model';
+import { SiteManager } from './siteManager';
+import { AtlascodeUriHandler } from './uriHandler';
+import { LegacyAtlascodeUriHandler, ONBOARDING_URL, SETTINGS_URL } from './uriHandler/legacyUriHandler';
+import { Experiments, FeatureFlagClient, FeatureFlagClientInitError, Features } from './util/featureFlags';
+import { OnlineDetector } from './util/online';
+import { AuthStatusBar } from './views/authStatusBar';
+import { HelpExplorer } from './views/HelpExplorer';
+import { JiraActiveIssueStatusBar } from './views/jira/activeIssueStatusBar';
+import { IssueHoverProviderManager } from './views/jira/issueHoverProviderManager';
+import { SearchJiraHelper } from './views/jira/searchJiraHelper';
+import { CustomJQLViewProvider } from './views/jira/treeViews/customJqlViewProvider';
+import { AssignedWorkItemsViewProvider } from './views/jira/treeViews/jiraAssignedWorkItemsViewProvider';
+import { PipelinesExplorer } from './views/pipelines/PipelinesExplorer';
 import { VSCAnalyticsApi } from './vscAnalyticsApi';
 import { VSCBitbucketIssueActionApi } from './webview/bbIssue/vscBitbucketIssueActionApi';
 import { VSCBitbucketIssueWebviewControllerFactory } from './webview/bbIssue/vscBitbucketIssueWebviewControllerFactory';
+import { VSCCreateBitbucketIssueActionImpl } from './webview/bbIssue/vscCreateBitbucketIssueActionApi';
+import { VSCCreateBitbucketIssueWebviewControllerFactory } from './webview/bbIssue/vscCreateBitbucketIssueWebviewControllerFactory';
 import { VSCCommonMessageHandler } from './webview/common/vscCommonMessageActionHandler';
 import { VSCConfigActionApi } from './webview/config/vscConfigActionApi';
 import { VSCConfigWebviewControllerFactory } from './webview/config/vscConfigWebviewControllerFactory';
-import { VSCCreateBitbucketIssueActionImpl } from './webview/bbIssue/vscCreateBitbucketIssueActionApi';
-import { VSCCreateBitbucketIssueWebviewControllerFactory } from './webview/bbIssue/vscCreateBitbucketIssueWebviewControllerFactory';
-import { VSCCreatePullRequestActionApi } from './webview/pullrequest/vscCreatePullRequestActionImpl';
-import { VSCCreatePullRequestWebviewControllerFactory } from './webview/pullrequest/vscCreatePullRequestWebviewControllerFactory';
+import { ExplorerFocusManager } from './webview/ExplorerFocusManager';
+import { MultiWebview } from './webview/multiViewFactory';
 import { VSCOnboardingActionApi } from './webview/onboarding/vscOnboardingActionApi';
 import { VSCOnboardingWebviewControllerFactory } from './webview/onboarding/vscOnboardingWebviewControllerFactory';
+import { PipelineSummaryActionImplementation } from './webview/pipelines/pipelineSummaryActionImplementation';
+import { PipelineSummaryWebviewControllerFactory } from './webview/pipelines/pipelineSummaryWebviewControllerFactory';
+import { VSCCreatePullRequestActionApi } from './webview/pullrequest/vscCreatePullRequestActionImpl';
+import { VSCCreatePullRequestWebviewControllerFactory } from './webview/pullrequest/vscCreatePullRequestWebviewControllerFactory';
 import { VSCPullRequestDetailsActionApi } from './webview/pullrequest/vscPullRequestDetailsActionApi';
 import { VSCPullRequestDetailsWebviewControllerFactory } from './webview/pullrequest/vscPullRequestDetailsWebviewControllerFactory';
+import { SingleWebview } from './webview/singleViewFactory';
 import { VSCStartWorkActionApi } from './webview/startwork/vscStartWorkActionApi';
 import { VSCStartWorkWebviewControllerFactory } from './webview/startwork/vscStartWorkWebviewControllerFactory';
-import { VSCWelcomeActionApi } from './webview/welcome/vscWelcomeActionApi';
-import { VSCWelcomeWebviewControllerFactory } from './webview/welcome/vscWelcomeWebviewControllerFactory';
-import { WelcomeAction } from './lib/ipc/fromUI/welcome';
-import { WelcomeInitMessage } from './lib/ipc/toUI/welcome';
-import { FeatureFlagClient } from './util/featureFlags';
-import { EventBuilder } from './util/featureFlags/eventBuilder';
+import { CreateIssueProblemsWebview } from './webviews/createIssueProblemsWebview';
+import { CreateIssueWebview } from './webviews/createIssueWebview';
+import { JiraIssueViewManager } from './webviews/jiraIssueViewManager';
+import { StartWorkOnBitbucketIssueWebview } from './webviews/startWorkOnBitbucketIssueWebview';
+import { StartWorkOnIssueWebview } from './webviews/startWorkOnIssueWebview';
 
 const isDebuggingRegex = /^--(debug|inspect)\b(-brk\b|(?!-))=?/;
 const ConfigTargetKey = 'configurationTarget';
 
 export class Container {
-    static initialize(context: ExtensionContext, config: IConfig, version: string) {
-        let analyticsEnv: string = this.isDebugging ? 'staging' : 'prod';
+    private static _cancellationManager: CancellationManager;
+    private static _commonMessageHandler: CommonActionMessageHandler;
+    private static _bitbucketHelper: CheckoutHelper;
+    private static _assignedWorkItemsView: AssignedWorkItemsViewProvider;
+
+    static async initialize(context: ExtensionContext, config: IConfig, version: string) {
+        const analyticsEnv: string = this.isDebugging ? 'staging' : 'prod';
 
         this._analyticsClient = analyticsClient({
             origin: 'desktop',
@@ -81,16 +89,8 @@ export class Container {
             product: 'externalProductIntegrations',
             subproduct: 'atlascode',
             version: version,
-            deviceId: env.machineId,
+            deviceId: this.machineId,
             enable: this.getAnalyticsEnable(),
-        });
-
-        FeatureFlagClient.initialize({
-            analyticsClient: this._analyticsClient,
-            identifiers: {
-                analyticsAnonymousId: env.machineId,
-            },
-            eventBuilder: new EventBuilder(),
         });
 
         this._cancellationManager = new Map();
@@ -99,6 +99,7 @@ export class Container {
 
         this._context = context;
         this._version = version;
+
         context.subscriptions.push((this._credentialManager = new CredentialManager(this._analyticsClient)));
         context.subscriptions.push((this._siteManager = new SiteManager(context.globalState)));
         context.subscriptions.push((this._clientManager = new ClientManager(context)));
@@ -110,16 +111,13 @@ export class Container {
             (this._createIssueProblemsWebview = new CreateIssueProblemsWebview(context.extensionPath)),
         );
         context.subscriptions.push((this._jiraIssueViewManager = new JiraIssueViewManager(context.extensionPath)));
-        context.subscriptions.push(
-            (this._startWorkOnIssueWebview = new StartWorkOnIssueWebview(context.extensionPath)),
-        );
+        context.subscriptions.push(new StartWorkOnIssueWebview(context.extensionPath));
         context.subscriptions.push(
             (this._startWorkOnBitbucketIssueWebview = new StartWorkOnBitbucketIssueWebview(context.extensionPath)),
         );
         context.subscriptions.push(new IssueHoverProviderManager());
-        context.subscriptions.push((this._authStatusBar = new AuthStatusBar()));
+        context.subscriptions.push(new AuthStatusBar());
         context.subscriptions.push((this._jqlManager = new JQLManager()));
-
         context.subscriptions.push((this._explorerFocusManager = new ExplorerFocusManager()));
 
         const settingsV2ViewFactory = new SingleWebview<SectionChangeMessage, ConfigAction>(
@@ -144,12 +142,6 @@ export class Container {
             this.analyticsApi,
         );
 
-        const welcomeV2ViewFactory = new SingleWebview<WelcomeInitMessage, WelcomeAction>(
-            context.extensionPath,
-            new VSCWelcomeWebviewControllerFactory(new VSCWelcomeActionApi(), this._commonMessageHandler),
-            this._analyticsApi,
-        );
-
         const startWorkV2ViewFactory = new SingleWebview<StartWorkIssueMessage, StartWorkAction>(
             context.extensionPath,
             new VSCStartWorkWebviewControllerFactory(
@@ -172,7 +164,6 @@ export class Container {
 
         context.subscriptions.push((this._settingsWebviewFactory = settingsV2ViewFactory));
         context.subscriptions.push((this._onboardingWebviewFactory = onboardingV2ViewFactory));
-        context.subscriptions.push((this._welcomeWebviewFactory = welcomeV2ViewFactory));
         context.subscriptions.push((this._startWorkWebviewFactory = startWorkV2ViewFactory));
         context.subscriptions.push((this._createPullRequestWebviewFactory = createPullRequestV2ViewFactory));
 
@@ -187,34 +178,69 @@ export class Container {
         this._pmfStats = new PmfStats(context);
 
         this._loginManager = new LoginManager(this._credentialManager, this._siteManager, this._analyticsClient);
-        this._bitbucketHelper = new CheckoutHelper(context.globalState);
-        context.subscriptions.push(
-            (this._uriHandler = new AtlascodeUriHandler(this._analyticsApi, this._bitbucketHelper)),
-        );
+        this._bitbucketHelper = new BitbucketCheckoutHelper(context.globalState);
 
-        if (config.jira.explorer.enabled) {
-            context.subscriptions.push((this._jiraExplorer = new JiraContext()));
-        } else {
-            let disposable: Disposable;
-            disposable = configuration.onDidChange((e) => {
-                if (configuration.changed(e, 'jira.explorer.enabled')) {
-                    disposable.dispose();
-                    context.subscriptions.push((this._jiraExplorer = new JiraContext()));
-                }
+        context.subscriptions.push(new HelpExplorer());
+
+        try {
+            await FeatureFlagClient.initialize({
+                analyticsClient: this._analyticsClient,
+                identifiers: {
+                    analyticsAnonymousId: this.machineId,
+                },
+            });
+
+            Logger.debug(`FeatureFlagClient: Succesfully initialized the client.`);
+            featureFlagClientInitializedEvent(true).then((e) => {
+                this.analyticsClient.sendTrackEvent(e);
+            });
+        } catch (err) {
+            const error = err as FeatureFlagClientInitError;
+            Logger.debug(`FeatureFlagClient: Failed to initialize the client: ${error.reason}`);
+            featureFlagClientInitializedEvent(false, error.errorType, error.reason).then((e) => {
+                this.analyticsClient.sendTrackEvent(e);
             });
         }
 
-        context.subscriptions.push((this._helpExplorer = new HelpExplorer()));
+        FeatureFlagClient.checkExperimentStringValueWithInstrumentation(Experiments.AtlascodeAA);
+        FeatureFlagClient.checkGateValueWithInstrumentation(Features.NoOpFeature);
+
+        this.initializeUriHandler(context, this._analyticsApi, this._bitbucketHelper);
+
+        SearchJiraHelper.initialize();
+        context.subscriptions.push(new CustomJQLViewProvider());
+        context.subscriptions.push((this._assignedWorkItemsView = new AssignedWorkItemsViewProvider()));
     }
 
-    static getAnalyticsEnable(): boolean {
+    static focus() {
+        this._assignedWorkItemsView.focus();
+    }
+
+    static openPullRequestHandler = (pullRequestUrl: string) => {
+        return openPullRequest(this._bitbucketHelper, pullRequestUrl);
+    };
+
+    private static getAnalyticsEnable(): boolean {
         const telemetryConfig = workspace.getConfiguration('telemetry');
         return telemetryConfig.get<boolean>('enableTelemetry', true);
     }
 
+    private static initializeUriHandler(
+        context: ExtensionContext,
+        analyticsApi: VSCAnalyticsApi,
+        bitbucketHelper: CheckoutHelper,
+    ) {
+        if (FeatureFlagClient.checkGate(Features.EnableNewUriHandler)) {
+            Logger.debug('Using new URI handler');
+            context.subscriptions.push(AtlascodeUriHandler.create(analyticsApi, bitbucketHelper));
+        } else {
+            context.subscriptions.push(new LegacyAtlascodeUriHandler(analyticsApi, bitbucketHelper));
+        }
+    }
+
     static initializeBitbucket(bbCtx: BitbucketContext) {
         this._bitbucketContext = bbCtx;
-        this._pipelinesExplorer = new PipelinesExplorer(bbCtx);
+        new PipelinesExplorer(bbCtx);
         this._context.subscriptions.push(
             (this._bitbucketIssueWebviewFactory = new MultiWebview<BitbucketIssue, BitbucketIssueAction>(
                 this._context.extensionPath,
@@ -258,11 +284,11 @@ export class Container {
         return env.machineId;
     }
 
-    static get isRemote() {
+    private static get isRemote() {
         return env.remoteName !== undefined;
     }
 
-    static get isWebUI() {
+    private static get isWebUI() {
         return env.uiKind === UIKind.Web;
     }
 
@@ -287,198 +313,185 @@ export class Container {
         this._context.globalState.update(ConfigTargetKey, target);
     }
 
-    private static _uriHandler: UriHandler;
-    static get uriHandler() {
-        return this._uriHandler;
+    public static async testLogout() {
+        Container.siteManager.getSitesAvailable(ProductJira).forEach(async (site) => {
+            await Container.clientManager.removeClient(site);
+            Container.siteManager.removeSite(site);
+        });
+    }
+
+    public static async testLogin() {
+        if (!process.env.ATLASCODE_TEST_USER_API_TOKEN) {
+            // vscode notify user that this is for testing only
+            window.showInformationMessage(
+                'This is for testing only. Please set the ATLASCODE_TEST_USER_API_TOKEN environment variable to run this test',
+            );
+            return;
+        }
+        const authInfo = {
+            username: ATLASCODE_TEST_USER_EMAIL,
+            password: process.env.ATLASCODE_TEST_USER_API_TOKEN,
+            user: {
+                id: '',
+                displayName: '',
+                email: '',
+                avatarUrl: '',
+            },
+            state: 0,
+        };
+        const site = {
+            host: ATLASCODE_TEST_HOST,
+            protocol: 'https:',
+            product: {
+                name: 'Jira',
+                key: 'jira',
+            },
+        };
+        await Container.loginManager.userInitiatedServerLogin(site, authInfo);
     }
 
     private static _version: string;
-    static get version() {
+    public static get version() {
         return this._version;
     }
 
-    static get config() {
+    public static get config() {
         // always return the latest
         return configuration.get<IConfig>();
     }
 
     private static _jqlManager: JQLManager;
-    static get jqlManager() {
+    public static get jqlManager() {
         return this._jqlManager;
     }
 
     private static _context: ExtensionContext;
-    static get context() {
+    public static get context() {
         return this._context;
     }
 
     private static _bitbucketContext: BitbucketContext;
-    static get bitbucketContext() {
+    public static get bitbucketContext() {
         return this._bitbucketContext;
     }
 
-    private static _helpExplorer: HelpExplorer;
-    static get helpExplorer() {
-        return this._helpExplorer;
-    }
-
     private static _explorerFocusManager: ExplorerFocusManager;
-    static get explorerFocusManager() {
+    public static get explorerFocusManager() {
         return this._explorerFocusManager;
     }
 
     private static _settingsWebviewFactory: SingleWebview<SectionChangeMessage, ConfigAction>;
-    static get settingsWebviewFactory() {
+    public static get settingsWebviewFactory() {
         return this._settingsWebviewFactory;
     }
 
     private static _onboardingWebviewFactory: SingleWebview<any, OnboardingAction>;
-    static get onboardingWebviewFactory() {
+    public static get onboardingWebviewFactory() {
         return this._onboardingWebviewFactory;
     }
 
     private static _pullRequestDetailsWebviewFactory: MultiWebview<any, PullRequestDetailsAction>;
-    static get pullRequestDetailsWebviewFactory() {
+    public static get pullRequestDetailsWebviewFactory() {
         return this._pullRequestDetailsWebviewFactory;
     }
 
     private static _pipelinesSummaryWebview: MultiWebview<Pipeline, PipelineSummaryAction>;
-    static get pipelinesSummaryWebview() {
+    public static get pipelinesSummaryWebview() {
         return this._pipelinesSummaryWebview;
     }
 
-    private static _welcomeWebviewFactory: SingleWebview<WelcomeInitMessage, WelcomeAction>;
-    static get welcomeWebviewFactory() {
-        return this._welcomeWebviewFactory;
-    }
-
     private static _startWorkWebviewFactory: SingleWebview<StartWorkIssueMessage, StartWorkAction>;
-    static get startWorkWebviewFactory() {
+    public static get startWorkWebviewFactory() {
         return this._startWorkWebviewFactory;
     }
 
     private static _createPullRequestWebviewFactory: SingleWebview<WorkspaceRepo, StartWorkAction>;
-    static get createPullRequestWebviewFactory() {
+    public static get createPullRequestWebviewFactory() {
         return this._createPullRequestWebviewFactory;
     }
 
     private static _bitbucketIssueWebviewFactory: MultiWebview<BitbucketIssue, BitbucketIssueAction>;
-    static get bitbucketIssueWebviewFactory() {
+    public static get bitbucketIssueWebviewFactory() {
         return this._bitbucketIssueWebviewFactory;
     }
 
     private static _createBitbucketIssueWebviewFactory: SingleWebview<BitbucketSite, CreateBitbucketIssueAction>;
-    static get createBitbucketIssueWebviewFactory() {
+    public static get createBitbucketIssueWebviewFactory() {
         return this._createBitbucketIssueWebviewFactory;
     }
 
     private static _createIssueWebview: CreateIssueWebview;
-    static get createIssueWebview() {
+    public static get createIssueWebview() {
         return this._createIssueWebview;
     }
 
     private static _createIssueProblemsWebview: CreateIssueProblemsWebview;
-    static get createIssueProblemsWebview() {
+    public static get createIssueProblemsWebview() {
         return this._createIssueProblemsWebview;
     }
 
-    private static _startWorkOnIssueWebview: StartWorkOnIssueWebview;
-    static get startWorkOnIssueWebview() {
-        return this._startWorkOnIssueWebview;
-    }
-
     private static _startWorkOnBitbucketIssueWebview: StartWorkOnBitbucketIssueWebview;
-    static get startWorkOnBitbucketIssueWebview() {
+    public static get startWorkOnBitbucketIssueWebview() {
         return this._startWorkOnBitbucketIssueWebview;
     }
 
-    private static _jiraExplorer: JiraContext | undefined;
-    static get jiraExplorer(): JiraContext {
-        return this._jiraExplorer!;
-    }
-
-    private static _pipelinesExplorer: PipelinesExplorer | undefined;
-    static get pipelinesExplorer(): PipelinesExplorer {
-        return this._pipelinesExplorer!;
-    }
-
     private static _jiraIssueViewManager: JiraIssueViewManager;
-    static get jiraIssueViewManager() {
+    public static get jiraIssueViewManager() {
         return this._jiraIssueViewManager;
     }
 
     private static _clientManager: ClientManager;
-    static get clientManager() {
+    public static get clientManager() {
         return this._clientManager;
     }
 
     private static _loginManager: LoginManager;
-    static get loginManager() {
+    public static get loginManager() {
         return this._loginManager;
     }
 
     private static _credentialManager: CredentialManager;
-    static get credentialManager() {
+    public static get credentialManager() {
         return this._credentialManager;
     }
 
     private static _onlineDetector: OnlineDetector;
-    static get onlineDetector() {
+    public static get onlineDetector() {
         return this._onlineDetector;
     }
 
-    private static _authStatusBar: AuthStatusBar;
-    static get authStatusBar() {
-        return this._authStatusBar;
-    }
-
     private static _jiraActiveIssueStatusBar: JiraActiveIssueStatusBar;
-    static get jiraActiveIssueStatusBar() {
+    public static get jiraActiveIssueStatusBar() {
         return this._jiraActiveIssueStatusBar;
     }
 
     private static _siteManager: SiteManager;
-    static get siteManager() {
+    public static get siteManager() {
         return this._siteManager;
     }
 
     private static _jiraSettingsManager: JiraSettingsManager;
-    static get jiraSettingsManager() {
+    public static get jiraSettingsManager() {
         return this._jiraSettingsManager;
     }
 
     private static _jiraProjectManager: JiraProjectManager;
-    static get jiraProjectManager() {
+    public static get jiraProjectManager() {
         return this._jiraProjectManager;
     }
 
     private static _analyticsClient: AnalyticsClient;
-    static get analyticsClient() {
+    public static get analyticsClient() {
         return this._analyticsClient;
     }
 
     private static _analyticsApi: VSCAnalyticsApi;
-    static get analyticsApi() {
+    public static get analyticsApi() {
         return this._analyticsApi;
     }
 
-    private static _commonMessageHandler: CommonActionMessageHandler;
-    static get commonMessageHandler() {
-        return this._commonMessageHandler;
-    }
-
-    private static _cancellationManager: CancellationManager;
-    static get cancellationManager() {
-        return this._cancellationManager;
-    }
-
     private static _pmfStats: PmfStats;
-    static get pmfStats() {
+    public static get pmfStats() {
         return this._pmfStats;
-    }
-
-    private static _bitbucketHelper: CheckoutHelper;
-    static get bitbucketHelper() {
-        return this._bitbucketHelper;
     }
 }

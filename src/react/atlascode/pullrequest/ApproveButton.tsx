@@ -1,6 +1,7 @@
 import { Box, Button, Typography } from '@material-ui/core';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import React, { useCallback } from 'react';
+
 import { ApprovalStatus } from '../../../bitbucket/model';
 
 type ApproveButtonProps = {
@@ -16,7 +17,12 @@ export const ApproveButton: React.FunctionComponent<ApproveButtonProps> = ({ hid
 
     return (
         <Box hidden={hidden}>
-            <Button startIcon={<CheckCircleIcon />} color={'primary'} variant={'contained'} onClick={handleOnApprove}>
+            <Button
+                startIcon={<CheckCircleIcon htmlColor={'#07b82b'} />}
+                color={'primary'}
+                variant={'contained'}
+                onClick={handleOnApprove}
+            >
                 <Typography variant={'button'} noWrap>
                     {status === 'APPROVED' ? 'Unapprove' : 'Approve'}
                 </Typography>

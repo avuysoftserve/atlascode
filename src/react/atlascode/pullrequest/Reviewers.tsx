@@ -2,7 +2,9 @@ import { Avatar, Badge, Box, CircularProgress, Grid, Tooltip, Typography } from 
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import { AvatarGroup } from '@material-ui/lab';
 import React, { useCallback, useEffect, useState } from 'react';
+
 import { BitbucketSite, Reviewer, User } from '../../../bitbucket/model';
+import StoppedIcon from '../icons/StoppedIcon';
 import { AddReviewers } from './AddReviewers';
 type ReviewersProps = {
     site: BitbucketSite;
@@ -60,14 +62,22 @@ export const Reviewers: React.FunctionComponent<ReviewersProps> = ({
                                         vertical: 'top',
                                         horizontal: 'right',
                                     }}
-                                    invisible={participant.status !== 'APPROVED'}
+                                    invisible={participant.status === 'UNAPPROVED'}
                                     key={participant.accountId}
                                     badgeContent={
-                                        <Tooltip title="Approved">
-                                            <Box bgcolor={'white'} borderRadius={'100%'}>
-                                                <CheckCircleIcon fontSize={'small'} htmlColor={'#07b82b'} />
-                                            </Box>
-                                        </Tooltip>
+                                        participant.status === 'CHANGES_REQUESTED' ? (
+                                            <Tooltip title="Requested changes">
+                                                <Box bgcolor={'white'} borderRadius={'100%'}>
+                                                    <StoppedIcon fontSize={'small'} htmlColor={'#FFAB00'} />
+                                                </Box>
+                                            </Tooltip>
+                                        ) : (
+                                            <Tooltip title="Approved">
+                                                <Box bgcolor={'white'} borderRadius={'100%'}>
+                                                    <CheckCircleIcon fontSize={'small'} htmlColor={'#07b82b'} />
+                                                </Box>
+                                            </Tooltip>
+                                        )
                                     }
                                 >
                                     <Tooltip title={participant.displayName}>

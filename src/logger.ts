@@ -1,16 +1,27 @@
-'use strict';
-import { ConfigurationChangeEvent, ExtensionContext, OutputChannel, window } from 'vscode';
+import { ConfigurationChangeEvent, Event, ExtensionContext, OutputChannel, window } from 'vscode';
+import { EventEmitter } from 'vscode';
+
 import { configuration, OutputLevel } from './config/configuration';
 import { extensionOutputChannelName } from './constants';
 import { Container } from './container';
 
 const ConsolePrefix = `[${extensionOutputChannelName}]`;
 
+export type ErrorEvent = {
+    error: Error;
+};
+
 export class Logger {
     private static _instance: Logger;
     private level: OutputLevel = OutputLevel.Info;
     private output: OutputChannel | undefined;
 
+    private static _onError = new EventEmitter<ErrorEvent>();
+    public static get onError(): Event<ErrorEvent> {
+        return Logger._onError.event;
+    }
+
+    // constructor is private to ensure only a single instance is created
     private constructor() {}
 
     public static get Instance(): Logger {
@@ -79,6 +90,8 @@ export class Logger {
     }
 
     public error(ex: Error, classOrMethod?: string, ...params: any[]): void {
+        Logger._onError.fire({ error: ex });
+
         if (this.level === OutputLevel.Silent) {
             return;
         }

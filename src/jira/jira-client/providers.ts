@@ -3,18 +3,19 @@ import { AgentProvider, getProxyHostAndPort, shouldTunnelHost } from '@atlassian
 import axios, { AxiosInstance } from 'axios';
 import * as fs from 'fs';
 import * as https from 'https';
-import { Logger } from 'src/logger';
 import * as sslRootCas from 'ssl-root-cas';
+
 import { DetailedSiteInfo, SiteInfo } from '../../atlclients/authInfo';
 import { BasicInterceptor } from '../../atlclients/basicInterceptor';
 import { addCurlLogging, rewriteSecureImageRequests } from '../../atlclients/interceptors';
 import { configuration } from '../../config/configuration';
 import { AxiosUserAgent } from '../../constants';
 import { Container } from '../../container';
+import { Logger } from '../../logger';
 import { Resources } from '../../resources';
 import { ConnectionTimeout } from '../../util/time';
 
-var tunnel = require('tunnel');
+const tunnel = require('tunnel');
 
 export function getAxiosInstance(): AxiosInstance {
     const instance = axios.create({
@@ -60,7 +61,7 @@ export const jiraBasicAuthProvider = (username: string, password: string): Autho
 };
 
 export const getAgent: AgentProvider = (site?: SiteInfo) => {
-    let agent = {};
+    let agent: Record<string, any> = {};
     try {
         if (site) {
             if (site.customSSLCertPaths && site.customSSLCertPaths.trim() !== '') {
@@ -123,7 +124,7 @@ export const getAgent: AgentProvider = (site?: SiteInfo) => {
                             certPath = Resources.charlesCert;
                         }
 
-                        let pemFile = fs.readFileSync(certPath);
+                        const pemFile = fs.readFileSync(certPath);
 
                         agent = {
                             httpsAgent: tunnel.httpsOverHttp({

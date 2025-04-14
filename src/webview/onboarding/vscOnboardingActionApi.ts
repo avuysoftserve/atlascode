@@ -1,6 +1,7 @@
 import { flatten } from 'flatten-anything';
 import { merge } from 'merge-anything';
 import { ConfigurationTarget, env } from 'vscode';
+
 import {
     AuthInfo,
     DetailedSiteInfo,
@@ -26,11 +27,11 @@ export class VSCOnboardingActionApi implements OnboardingActionApi {
     }
 
     public async authenticateServer(site: SiteInfo, authInfo: AuthInfo): Promise<void> {
-        return await Container.loginManager.userInitiatedServerLogin(site, authInfo);
+        return await Container.loginManager.userInitiatedServerLogin(site, authInfo, true);
     }
 
     public async authenticateCloud(site: SiteInfo, callback: string): Promise<void> {
-        return Container.loginManager.userInitiatedOAuthLogin(site, callback);
+        return Container.loginManager.userInitiatedOAuthLogin(site, callback, true);
     }
 
     public async clearAuth(site: DetailedSiteInfo): Promise<void> {

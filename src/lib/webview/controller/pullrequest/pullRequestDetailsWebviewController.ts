@@ -1,6 +1,7 @@
 import { defaultActionGuard } from '@atlassianlabs/guipi-core-controller';
 import { MinimalIssue } from '@atlassianlabs/jira-pi-common-models';
 import Axios from 'axios';
+
 import { DetailedSiteInfo } from '../../../../atlclients/authInfo';
 import {
     ApprovalStatus,
@@ -31,9 +32,10 @@ import { CommonActionMessageHandler } from '../common/commonActionMessageHandler
 import { MessagePoster, WebviewController } from '../webviewController';
 import { PullRequestDetailsActionApi } from './pullRequestDetailsActionApi';
 
-export const title: string = 'Pull Request'; //TODO: Needs the pull request ID as well...
-
 export class PullRequestDetailsWebviewController implements WebviewController<PullRequest> {
+    public readonly requiredFeatureFlags = [];
+    public readonly requiredExperiments = [];
+
     private pr: PullRequest;
     private commits: Commit[] = [];
     private messagePoster: MessagePoster;
@@ -41,10 +43,10 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
     private logger: Logger;
     private analytics: AnalyticsApi;
     private commonHandler: CommonActionMessageHandler;
-    private isRefreshing: boolean;
-    private pageComments: Comment[];
-    private inlineComments: Comment[];
-    private tasks: Task[];
+    private isRefreshing = false;
+    private pageComments: Comment[] | undefined;
+    private inlineComments: Comment[] | undefined;
+    private tasks: Task[] | undefined;
 
     constructor(
         pr: PullRequest,
@@ -61,6 +63,8 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
         this.analytics = analytics;
         this.commonHandler = commonHandler;
     }
+
+    public onShown(): void {}
 
     private postMessage(message: PullRequestDetailsMessage | PullRequestDetailsResponse | CommonMessage) {
         this.messagePoster(message);
@@ -167,6 +171,13 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
                 });
             });
 
+            this.api.getConflictedFiles(this.pr).then((conflictedFiles: string[]) => {
+                this.postMessage({
+                    type: PullRequestDetailsMessageType.UpdateConflictedFiles,
+                    conflictedFiles,
+                });
+            });
+
             //In order to get related issues, we need comments and commits. We already have comments,
             //so now we wait for commits. These two promises can be launched concurrently.
             this.commits = await commitPromise;
@@ -203,7 +214,7 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
             this.inlineComments = tasksAndComments.inlineComments;
             this.tasks = tasksAndComments.tasks;
         } catch (e) {
-            let err = new Error(`error updating pull request: ${e}`);
+            const err = new Error(`error updating pull request: ${e}`);
             this.logger.error(err);
             this.postMessage({ type: CommonMessageType.Error, reason: formatError(e) });
         } finally {
@@ -211,8 +222,8 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
         }
     }
 
-    public async update() {
-        this.invalidate();
+    public update() {
+        return this.invalidate();
     }
 
     public async onMessageReceived(msg: PullRequestDetailsAction | CommonAction) {
@@ -347,7 +358,7 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
                 try {
                     this.analytics.firePrCommentEvent(this.pr.site.details);
                     this.pageComments = await this.api.postComment(
-                        this.pageComments,
+                        this.pageComments!,
                         this.pr,
                         msg.rawText,
                         msg.parentId,
@@ -373,7 +384,7 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
             case PullRequestDetailsActionType.EditComment: {
                 try {
                     this.pageComments = await this.api.editComment(
-                        this.pageComments,
+                        this.pageComments!,
                         this.pr,
                         msg.rawContent,
                         msg.commentId,
@@ -422,8 +433,8 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
                 try {
                     this.analytics.firePrTaskEvent(this.pr.site.details, msg.commentId);
                     const { tasks, comments } = await this.api.createTask(
-                        this.tasks,
-                        [...this.pageComments, ...this.inlineComments],
+                        this.tasks!,
+                        [...this.pageComments!, ...this.inlineComments!],
                         this.pr,
                         msg.content,
                         msg.commentId,
@@ -451,8 +462,8 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
             case PullRequestDetailsActionType.EditTask: {
                 try {
                     const { tasks, comments } = await this.api.editTask(
-                        this.tasks,
-                        [...this.pageComments, ...this.inlineComments],
+                        this.tasks!,
+                        [...this.pageComments!, ...this.inlineComments!],
                         this.pr,
                         msg.task,
                     );
@@ -502,7 +513,7 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
             case PullRequestDetailsActionType.OpenDiffRequest:
                 try {
                     //Inline comments are passed in to avoid refetching them.
-                    await this.api.openDiffViewForFile(this.pr, msg.fileDiff, this.inlineComments);
+                    await this.api.openDiffViewForFile(this.pr, msg.fileDiff, this.inlineComments!);
                 } catch (e) {
                     this.logger.error(new Error(`error opening diff: ${e}`));
                     this.postMessage({
@@ -567,6 +578,7 @@ export class PullRequestDetailsWebviewController implements WebviewController<Pu
                 }
                 break;
 
+            case CommonActionType.SendAnalytics:
             case CommonActionType.CopyLink:
             case CommonActionType.OpenJiraIssue:
             case CommonActionType.SubmitFeedback:

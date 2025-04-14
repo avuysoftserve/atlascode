@@ -1,6 +1,7 @@
 import { Box, darken, Grid, lighten, makeStyles, Theme, Tooltip, Typography } from '@material-ui/core';
 import EditIcon from '@material-ui/icons/Edit';
 import React, { useCallback, useState } from 'react';
+
 import { User } from '../../../bitbucket/model';
 import { MarkdownEditor } from '../common/editor/MarkdownEditor';
 
@@ -32,7 +33,7 @@ const useStyles = makeStyles(
 type InlineTextEditorProps = {
     rawContent: string;
     htmlContent: string;
-    onSave?: (value: string) => Promise<void>;
+    onSave?: (value: string) => void;
     fetchUsers?: (input: string) => Promise<User[]>;
 };
 
@@ -49,10 +50,10 @@ const InlineRenderedTextEditor: React.FC<InlineTextEditorProps> = (props: Inline
 
     const handleSave = useCallback(
         async (value: string) => {
-            await props.onSave?.(value);
+            props.onSave?.(value);
             exitEditMode();
         },
-        [exitEditMode, props.onSave],
+        [exitEditMode, props.onSave], // eslint-disable-line react-hooks/exhaustive-deps
     );
 
     return editMode ? (

@@ -1,4 +1,3 @@
-'use strict';
 export * from './model';
 
 import {
@@ -12,6 +11,7 @@ import {
     workspace,
     WorkspaceConfiguration,
 } from 'vscode';
+
 import {
     extensionId,
     JiraCreateSiteAndProjectKey,

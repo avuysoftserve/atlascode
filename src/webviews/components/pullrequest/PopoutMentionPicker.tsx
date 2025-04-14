@@ -56,15 +56,15 @@ export default class PopoutMentionPicker extends React.Component<
                 onClose={this.toggleOpen}
                 target={
                     <Tooltip content={this.props.targetButtonTooltip}>
-                        <Button {...this.props.targetButtonProps} onClick={this.toggleOpen} isSelected={isOpen}>
+                        <Button {...this.props.targetButtonProps} onClick={this.toggleOpen}>
                             {this.props.targetButtonContent}
                         </Button>
                     </Tooltip>
                 }
             >
                 <AsyncSelect
-                    className="ac-select-container"
-                    classNamePrefix="ac-select"
+                    className="ac-form-select-container"
+                    classNamePrefix="ac-form-select"
                     autoFocus
                     backspaceRemovesValue={false}
                     components={{ Option: UserOption, DropdownIndicator, IndicatorSeparator: null }}

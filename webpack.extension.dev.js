@@ -13,7 +13,7 @@ dotenv.config();
 
 module.exports = [
     {
-        bail: true,
+        bail: !process.env.WATCH,
         name: 'extension',
         mode: 'development',
         target: 'node',
@@ -77,6 +77,11 @@ module.exports = [
                 'process.env.ATLASCODE_FX3_ENVIRONMENT': JSON.stringify(process.env.ATLASCODE_FX3_ENVIRONMENT),
                 'process.env.ATLASCODE_FX3_TARGET_APP': JSON.stringify(process.env.ATLASCODE_FX3_TARGET_APP),
                 'process.env.ATLASCODE_FX3_TIMEOUT': JSON.stringify(process.env.ATLASCODE_FX3_TIMEOUT),
+                'process.env.ATLASCODE_TEST_USER_API_TOKEN': JSON.stringify(process.env.ATLASCODE_TEST_USER_API_TOKEN),
+                'process.env.ATLASCODE_FF_OVERRIDES': JSON.stringify(process.env.ATLASCODE_FF_OVERRIDES),
+                'process.env.ATLASCODE_EXP_OVERRIDES_BOOL': JSON.stringify(process.env.ATLASCODE_EXP_OVERRIDES_BOOL),
+                'process.env.ATLASCODE_EXP_OVERRIDES_STRING': JSON.stringify(process.env.ATLASCODE_EXP_OVERRIDES_STRING),
+                'process.env.CI': JSON.stringify(process.env.CI),
             }),
         ],
     },

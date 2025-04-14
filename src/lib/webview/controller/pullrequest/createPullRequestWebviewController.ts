@@ -1,5 +1,6 @@
 import { defaultActionGuard } from '@atlassianlabs/guipi-core-controller';
 import Axios from 'axios';
+
 import { Registry } from '../../../../analytics';
 import { ProductBitbucket } from '../../../../atlclients/authInfo';
 import { WorkspaceRepo } from '../../../../bitbucket/model';
@@ -20,6 +21,9 @@ import { MessagePoster, WebviewController } from '../webviewController';
 import { CreatePullRequestActionApi } from './createPullRequestActionApi';
 
 export class CreatePullRequestWebviewController implements WebviewController<WorkspaceRepo> {
+    public readonly requiredFeatureFlags = [];
+    public readonly requiredExperiments = [];
+
     private isRefreshing = false;
     private initData: WorkspaceRepo;
 
@@ -33,6 +37,8 @@ export class CreatePullRequestWebviewController implements WebviewController<Wor
     ) {
         this.initData = factoryData!;
     }
+
+    public onShown(): void {}
 
     public title(): string {
         return 'Create pull request';
@@ -62,7 +68,7 @@ export class CreatePullRequestWebviewController implements WebviewController<Wor
                 repoData: repoData,
             });
         } catch (e) {
-            let err = new Error(`error updating start work page: ${e}`);
+            const err = new Error(`error updating start work page: ${e}`);
             this.logger.error(err);
             this.postMessage({ type: CommonMessageType.Error, reason: formatError(e) });
         } finally {
@@ -173,6 +179,7 @@ export class CreatePullRequestWebviewController implements WebviewController<Wor
                 }
                 break;
 
+            case CommonActionType.SendAnalytics:
             case CommonActionType.CopyLink:
             case CommonActionType.OpenJiraIssue:
             case CommonActionType.ExternalLink:

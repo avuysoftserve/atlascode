@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
-import pAny from 'p-any';
 import pRetry from 'p-retry';
 import { ConfigurationChangeEvent, Disposable, Event, EventEmitter } from 'vscode';
+
 import { addCurlLogging } from '../atlclients/interceptors';
 import { configuration } from '../config/configuration';
 import { AxiosUserAgent } from '../constants';
@@ -18,8 +18,8 @@ const offlinePolling: number = 5 * Time.SECONDS;
 
 export class OnlineDetector extends Disposable {
     private _disposable: Disposable;
-    private _isOnline: boolean;
-    private _isOfflineMode: boolean;
+    private _isOnline: boolean | undefined;
+    private _isOfflineMode: boolean | undefined;
     private _onlineTimer: any | undefined;
     private _offlineTimer: any | undefined;
     private _transport: AxiosInstance;
@@ -79,7 +79,7 @@ export class OnlineDetector extends Disposable {
     private async runOnlineChecks(): Promise<boolean> {
         const urlList = Container.config.onlineCheckerUrls.slice();
         const promise = async () =>
-            await pAny(
+            await Promise.any(
                 urlList.map((url) => {
                     return (async () => {
                         Logger.debug(`Online check attempting to connect to ${url}`);
@@ -104,7 +104,7 @@ export class OnlineDetector extends Disposable {
         if (!this._checksInFlight) {
             this._checksInFlight = true;
 
-            let newIsOnline = await this.runOnlineChecks();
+            const newIsOnline = await this.runOnlineChecks();
 
             this._checksInFlight = false;
 

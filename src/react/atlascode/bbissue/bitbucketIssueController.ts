@@ -1,6 +1,7 @@
 import { defaultActionGuard, defaultStateGuard, ReducerAction } from '@atlassianlabs/guipi-core-controller';
 import React, { useCallback, useMemo, useReducer } from 'react';
 import { v4 } from 'uuid';
+
 import { BitbucketIssueData, Comment, emptyComment, emptyUser, User } from '../../../bitbucket/model';
 import { BitbucketIssueAction, BitbucketIssueActionType } from '../../../lib/ipc/fromUI/bbIssue';
 import { CommonActionType } from '../../../lib/ipc/fromUI/common';
@@ -35,7 +36,7 @@ export interface BitbucketIssueControllerApi {
     createJiraIssue: () => void;
 }
 
-export const emptyApi: BitbucketIssueControllerApi = {
+const emptyApi: BitbucketIssueControllerApi = {
     postMessage: () => {},
     refresh: () => {},
     openLink: () => {},
@@ -62,7 +63,7 @@ const emptyState: BitbucketIssueState = {
     isSomethingLoading: false,
 };
 
-export enum BitbucketIssueUIActionType {
+enum BitbucketIssueUIActionType {
     Init = 'init',
     InitComments = 'initComments',
     UpdateComments = 'updateComments',
@@ -70,14 +71,12 @@ export enum BitbucketIssueUIActionType {
     Loading = 'loading',
 }
 
-export type BitbucketIssueUIAction =
+type BitbucketIssueUIAction =
     | ReducerAction<BitbucketIssueUIActionType.Init, { data: BitbucketIssueInitMessage }>
     | ReducerAction<BitbucketIssueUIActionType.InitComments, { data: BitbucketIssueCommentsMessage }>
     | ReducerAction<BitbucketIssueUIActionType.UpdateComments, { data: BitbucketIssueCommentsMessage }>
     | ReducerAction<BitbucketIssueUIActionType.LocalChange, { data: BitbucketIssueChangesMessage }>
     | ReducerAction<BitbucketIssueUIActionType.Loading, {}>;
-
-export type BitbucketIssueChanges = { [key: string]: any };
 
 function reducer(state: BitbucketIssueState, action: BitbucketIssueUIAction): BitbucketIssueState {
     switch (action.type) {
@@ -218,7 +217,7 @@ export function useBitbucketIssueController(): [BitbucketIssueState, BitbucketIs
             return new Promise<User[]>((resolve, reject) => {
                 (async () => {
                     try {
-                        var abortKey: string = '';
+                        let abortKey: string = '';
 
                         if (abortSignal) {
                             abortKey = v4();

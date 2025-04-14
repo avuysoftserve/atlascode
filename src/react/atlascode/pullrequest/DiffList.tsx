@@ -14,6 +14,7 @@ import {
 } from '@material-ui/core';
 import clsx from 'clsx';
 import React from 'react';
+
 import { FileDiff, FileStatus } from '../../../bitbucket/model';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -52,6 +53,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 export const DiffList: React.FunctionComponent<{
     fileDiffs: FileDiff[];
     openDiffHandler: (filediff: FileDiff) => void;
+    conflictedFiles: string[];
 }> = (props) => {
     const classes = useStyles();
 
@@ -93,9 +95,11 @@ export const DiffList: React.FunctionComponent<{
         }
     };
 
-    const ConflictChip = (fileDiff: FileDiff) => {
-        // Is either undefined or false
-        if (!fileDiff.isConflicted) {
+    const ConflictChip = (fileDiff: FileDiff, conflictedFiles: string[]) => {
+        // Is fileDiff's old or new path doesn't exists in conflictedFiles
+        const newPath = fileDiff.newPath || '';
+        const oldPath = fileDiff.oldPath || '';
+        if (!conflictedFiles.includes(newPath) || !conflictedFiles.includes(oldPath)) {
             return <div></div>;
         }
         return (
@@ -113,7 +117,6 @@ export const DiffList: React.FunctionComponent<{
             </Tooltip>
         );
     };
-
     return (
         <TableContainer>
             <Table size="small" className={classes.table} aria-label="commits list">
@@ -153,9 +156,11 @@ export const DiffList: React.FunctionComponent<{
                                     />
                                 </Tooltip>
                             </TableCell>
-                            <TableCell className={classes.tableCell}>{ConflictChip(row)}</TableCell>
                             <TableCell className={classes.tableCell}>
-                                <Link onClick={() => props.openDiffHandler(row)}>
+                                {ConflictChip(row, props.conflictedFiles)}
+                            </TableCell>
+                            <TableCell className={classes.tableCell}>
+                                <Link component="button" onClick={() => props.openDiffHandler(row)}>
                                     <Typography>{row.file}</Typography>
                                 </Link>
                             </TableCell>

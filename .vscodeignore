@@ -1,8 +1,43 @@
+# Allowed:
+# build/
+# resources/
+# images/
+# LICENSE
+
+__mocks__/
+.generated/
+e2e/
+.npm/
+
+.env
+.env.example
+.eslintignore
+.mocharc.js
+.nvmrc
+.prettierignore
+CODEOWNERS
+HOMEPAGE.md
+changelog.md
+nightlyver.sh
+package.json
+readme.md
+setupTests.js
+setupTestsReact.js
+tsconfig.notest.json
+tsconfig.ui-test.json
+ui-test-settings.json
+vscode-stylenames.txt
+.devcontainer/
+.github/
+coverage/
+scripts/
+
 .vscode/**
 .vscode-test/**
 out/test/**
 out/**/*.map
 src/**
+testsutil/**
 patches/**
 .gitignore
 bitbucket-pipelines.yml
@@ -22,3 +57,6 @@ devhtml/**
 .yalc/**
 .storybook/**
 jest.config.js
+jest.react.config.js
+jest.unit.config.js
+.test-extensions/** 

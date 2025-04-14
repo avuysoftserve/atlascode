@@ -1,5 +1,6 @@
 import { defaultActionGuard } from '@atlassianlabs/guipi-core-controller';
 import Axios from 'axios';
+
 import { ProductBitbucket } from '../../../../atlclients/authInfo';
 import { BitbucketIssue, User } from '../../../../bitbucket/model';
 import { AnalyticsApi } from '../../../analyticsApi';
@@ -17,13 +18,16 @@ import { BitbucketIssueActionApi } from './bitbucketIssueActionApi';
 export const id: string = 'bitbucketIssuePageV2';
 
 export class BitbucketIssueWebviewController implements WebviewController<BitbucketIssue> {
+    public readonly requiredFeatureFlags = [];
+    public readonly requiredExperiments = [];
+
     private _issue: BitbucketIssue;
     private _messagePoster: MessagePoster;
     private _api: BitbucketIssueActionApi;
     private _logger: Logger;
     private _analytics: AnalyticsApi;
     private _commonHandler: CommonActionMessageHandler;
-    private _isRefreshing: boolean;
+    private _isRefreshing = false;
     private _participants: Map<string, User> = new Map();
 
     constructor(
@@ -41,6 +45,8 @@ export class BitbucketIssueWebviewController implements WebviewController<Bitbuc
         this._analytics = analytics;
         this._commonHandler = commonHandler;
     }
+
+    public onShown(): void {}
 
     public title(): string {
         return `Bitbucket issue #${this._issue.data.id}`;
@@ -82,7 +88,7 @@ export class BitbucketIssueWebviewController implements WebviewController<Bitbuc
                 comments: comments,
             });
         } catch (e) {
-            let err = new Error(`error updating bitbucket issue: ${e}`);
+            const err = new Error(`error updating bitbucket issue: ${e}`);
             this._logger.error(err);
             this.postMessage({ type: CommonMessageType.Error, reason: formatError(e) });
         } finally {
@@ -194,6 +200,7 @@ export class BitbucketIssueWebviewController implements WebviewController<Bitbuc
                 break;
             }
 
+            case CommonActionType.SendAnalytics:
             case CommonActionType.CopyLink:
             case CommonActionType.OpenJiraIssue:
             case CommonActionType.Cancel:

@@ -1,7 +1,8 @@
 import Page, { Grid, GridColumn } from '@atlaskit/page';
 import { emptyProject, Project } from '@atlassianlabs/jira-pi-common-models';
-import { CreateMetaTransformerProblems } from '@atlassianlabs/jira-pi-meta-models/ui-meta';
+import { CreateMetaTransformerProblems } from '@atlassianlabs/jira-pi-meta-models';
 import * as React from 'react';
+
 import { IssueProblemsData } from '../../../ipc/issueMessaging';
 import { Action, HostErrorMessage } from '../../../ipc/messaging';
 import ErrorBanner from '../ErrorBanner';
@@ -51,10 +52,10 @@ export default class CreateIssueProblems extends WebviewComponent<Action, Accept
     };
 
     public render() {
-        let issueTypeProblems: any[] = [];
+        const issueTypeProblems: any[] = [];
         Object.keys(this.state.problems).forEach((problemKey) => {
             const problem = this.state.problems[problemKey];
-            let issueTypeFields: any[] = [];
+            const issueTypeFields: any[] = [];
             problem.nonRenderableFields.forEach((fieldProblem) => {
                 issueTypeFields.push(
                     <tr>

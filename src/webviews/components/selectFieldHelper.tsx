@@ -1,8 +1,9 @@
 import Avatar from '@atlaskit/avatar';
 import Lozenge from '@atlaskit/lozenge';
 import { components } from '@atlaskit/select';
-import { SelectFieldUI, ValueType } from '@atlassianlabs/jira-pi-meta-models/ui-meta';
+import { SelectFieldUI, ValueType } from '@atlassianlabs/jira-pi-meta-models';
 import * as React from 'react';
+
 import { colorToLozengeAppearanceMap } from './colors';
 
 type OptionFunc = (option: any) => string;
@@ -123,11 +124,11 @@ const MultiIconValue = (props: any) => {
 };
 
 const AvatarOption = (props: any) => {
-    let avatar = props.data.avatarUrls && props.data.avatarUrls['24x24'] ? props.data.avatarUrls['24x24'] : '';
+    const avatar = props.data.avatarUrls && props.data.avatarUrls['48x48'] ? props.data.avatarUrls['48x48'] : '';
     return (
         <components.Option {...props}>
             <div ref={props.innerRef} {...props.innerProps} className="ac-flex">
-                <Avatar size="medium" borderColor="var(--vscode-dropdown-foreground)!important" src={avatar} />
+                <Avatar size="small" borderColor="var(--vscode-dropdown-backgrouns)!important" src={avatar} />
                 <span style={{ marginLeft: '4px' }}>{props.label}</span>
             </div>
         </components.Option>
@@ -145,11 +146,11 @@ const SingleAvatarValue = (props: any) => {
     if (typeof props.data === 'string') {
         label = props.data;
     }
-    let avatar = props.data.avatarUrls && props.data.avatarUrls['24x24'] ? props.data.avatarUrls['24x24'] : '';
+    const avatar = props.data.avatarUrls && props.data.avatarUrls['48x48'] ? props.data.avatarUrls['48x48'] : '';
     return (
         <components.SingleValue {...props}>
             <div ref={props.innerRef} {...props.innerProps} className="ac-flex">
-                <Avatar size="small" borderColor="var(--vscode-dropdown-foreground)!important" src={avatar} />
+                <Avatar size="small" borderColor="var(--vscode-editor-background)!important" src={avatar} />
                 <span style={{ marginLeft: '4px' }}>{label}</span>
             </div>
         </components.SingleValue>
@@ -168,11 +169,11 @@ const MultiAvatarValue = (props: any) => {
         label = props.data;
     }
 
-    let avatar = props.data.avatarUrls && props.data.avatarUrls['24x24'] ? props.data.avatarUrls['24x24'] : '';
+    const avatar = props.data.avatarUrls && props.data.avatarUrls['48x48'] ? props.data.avatarUrls['48x48'] : '';
     return (
         <components.MultiValueLabel {...props}>
             <div ref={props.innerRef} {...props.innerProps} className="ac-flex">
-                <Avatar size="small" borderColor="var(--vscode-dropdown-foreground)!important" src={avatar} />
+                <Avatar size="small" borderColor="var(--vscode-editor-background)!important" src={avatar} />
                 <span style={{ marginLeft: '4px' }}>{label}</span>
             </div>
         </components.MultiValueLabel>

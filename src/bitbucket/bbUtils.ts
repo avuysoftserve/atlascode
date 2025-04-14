@@ -1,4 +1,5 @@
 import gitUrlParse from 'git-url-parse';
+
 import { DetailedSiteInfo, ProductBitbucket } from '../atlclients/authInfo';
 import { bbAPIConnectivityError } from '../constants';
 import { Container } from '../container';
@@ -91,7 +92,7 @@ export function urlForRemote(remote: Remote): string {
 }
 
 export async function clientForRemote(remote: Remote): Promise<BitbucketApi> {
-    let site = siteDetailsForRemote(remote);
+    const site = siteDetailsForRemote(remote);
 
     if (site) {
         return await Container.clientManager.bbClient(site);
@@ -101,7 +102,7 @@ export async function clientForRemote(remote: Remote): Promise<BitbucketApi> {
 }
 
 export async function clientForHostname(hostname: string): Promise<BitbucketApi> {
-    let site = Container.siteManager.getSiteForHostname(ProductBitbucket, hostname);
+    const site = Container.siteManager.getSiteForHostname(ProductBitbucket, hostname);
 
     if (site) {
         return await Container.clientManager.bbClient(site);

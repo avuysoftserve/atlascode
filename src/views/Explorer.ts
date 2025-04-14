@@ -1,5 +1,6 @@
 import { Project } from '@atlassianlabs/jira-pi-common-models';
 import { Disposable, TreeDataProvider, TreeItem, TreeView, TreeViewVisibilityChangeEvent, window } from 'vscode';
+
 import { viewScreenEvent } from '../analytics';
 import { Product } from '../atlclients/authInfo';
 import { Container } from '../container';
@@ -72,7 +73,4 @@ export abstract class BaseTreeDataProvider implements TreeDataProvider<AbstractB
 
     refresh() {}
     dispose() {}
-    getParent(node: AbstractBaseNode): AbstractBaseNode | undefined {
-        return node.getParent();
-    }
 }

@@ -1,11 +1,8 @@
-import { AccessibleResource, DetailedSiteInfo, OAuthProvider, ProductBitbucket } from './authInfo';
-
 import { Authenticator } from './authenticator';
+import { AccessibleResource, DetailedSiteInfo, OAuthProvider, ProductBitbucket } from './authInfo';
 import { CredentialManager } from './authStore';
 
 export class BitbucketAuthenticator implements Authenticator {
-    constructor() {}
-
     public async getOAuthSiteDetails(
         provider: OAuthProvider,
         userId: string,
@@ -14,7 +11,7 @@ export class BitbucketAuthenticator implements Authenticator {
         let newSites: DetailedSiteInfo[] = [];
 
         if (resources.length > 0) {
-            let resource = resources[0];
+            const resource = resources[0];
             const hostname = provider === OAuthProvider.BitbucketCloud ? 'bitbucket.org' : 'staging.bb-inf.net';
             const baseApiUrl =
                 provider === OAuthProvider.BitbucketCloud
@@ -37,6 +34,7 @@ export class BitbucketAuthenticator implements Authenticator {
                     isCloud: true,
                     userId: userId,
                     credentialId: credentialId,
+                    hasResolutionField: false,
                 },
             ];
         }

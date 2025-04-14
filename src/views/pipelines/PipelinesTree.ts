@@ -10,6 +10,7 @@ import {
     TreeItemCollapsibleState,
     Uri,
 } from 'vscode';
+
 import { ProductBitbucket } from '../../atlclients/authInfo';
 import { clientForSite } from '../../bitbucket/bbUtils';
 import { WorkspaceRepo } from '../../bitbucket/model';
@@ -95,8 +96,8 @@ export class PipelinesTree extends BaseTreeDataProvider {
     }
 }
 
-export class PipelinesRepoNode extends AbstractBaseNode {
-    private _pipelines: Pipeline[];
+class PipelinesRepoNode extends AbstractBaseNode {
+    private _pipelines: Pipeline[] | undefined;
     private _page = 1;
     private _morePages = true;
 

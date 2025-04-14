@@ -1,6 +1,7 @@
 import TurnDownService from 'turndown';
 import * as vscode from 'vscode';
 import { HoverProvider } from 'vscode';
+
 import { viewScreenEvent } from '../../analytics';
 import { Commands } from '../../commands';
 import { Container } from '../../container';
@@ -9,11 +10,11 @@ import { IssueKeyRegEx } from '../../jira/issueKeyParser';
 
 export class IssueHoverProvider implements HoverProvider {
     async provideHover(doc: vscode.TextDocument, position: vscode.Position) {
-        let range = doc.getWordRangeAtPosition(position, IssueKeyRegEx);
+        const range = doc.getWordRangeAtPosition(position, IssueKeyRegEx);
         if (range === undefined || range.isEmpty) {
             return null;
         }
-        let text = doc.getText(range);
+        const text = doc.getText(range);
         return this.getIssueDetails(text);
     }
 
@@ -21,7 +22,7 @@ export class IssueHoverProvider implements HoverProvider {
         let issue = undefined;
         try {
             issue = await issueForKey(key);
-        } catch (e) {
+        } catch {
             return Promise.reject(`issue not found ${key}`);
         }
 
@@ -39,7 +40,7 @@ export class IssueHoverProvider implements HoverProvider {
 | ![](${issue.priority.iconUrl.replace('.svg', '.png')}) | ${issue.priority.name} |
 |                                                        | ${statusText}          |`;
 
-        let text = [];
+        const text = [];
         text.push(new vscode.MarkdownString(header));
         text.push(new vscode.MarkdownString(descriptionText));
         const encodedKey = encodeURIComponent(JSON.stringify([issue.siteDetails.id, key]));

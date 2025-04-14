@@ -1,5 +1,6 @@
 import { defaultStateGuard, ReducerAction } from '@atlassianlabs/guipi-core-controller';
 import React, { useCallback, useMemo, useReducer } from 'react';
+
 import { CommonActionType } from '../../../lib/ipc/fromUI/common';
 import { PipelineSummaryAction, PipelineSummaryActionType } from '../../../lib/ipc/fromUI/pipelineSummary';
 import { emptyPipeline } from '../../../lib/ipc/models/pipelineSummary';
@@ -16,9 +17,10 @@ export interface PipelineSummaryControllerApi {
     refresh: () => void;
     rerun: () => void;
     fetchLogs: (stepUuid: string, logReference: PipelineLogReference) => void;
+    postMessage: (a: PipelineSummaryAction) => void;
 }
 
-export const emptyApi: PipelineSummaryControllerApi = {
+const emptyApi: PipelineSummaryControllerApi = {
     refresh: (): void => {
         return;
     },
@@ -28,15 +30,16 @@ export const emptyApi: PipelineSummaryControllerApi = {
     fetchLogs: (stepUuid: string, logReference: PipelineLogReference) => {
         return Promise.resolve('');
     },
+    postMessage: () => {},
 };
 
-export enum PipelineSummaryUIActionType {
+enum PipelineSummaryUIActionType {
     Update = 'update',
     StepsUpdate = 'stepsUpdate',
     Refreshing = 'refreshing',
 }
 
-export type PipelineSummaryUIAction =
+type PipelineSummaryUIAction =
     | ReducerAction<PipelineSummaryUIActionType.Update, { data: any }>
     | ReducerAction<PipelineSummaryUIActionType.StepsUpdate, { steps: PipelineStep[] }>
     | ReducerAction<PipelineSummaryUIActionType.Refreshing, { data: any }>;
@@ -138,8 +141,9 @@ export function usePipelineSummaryController(): [PipelineSummaryState, PipelineS
             refresh: sendRefresh,
             rerun: rerun,
             fetchLogs: fetchLogs,
+            postMessage: postMessage,
         };
-    }, [sendRefresh, rerun, fetchLogs]);
+    }, [sendRefresh, rerun, fetchLogs, postMessage]);
 
     return [state, pipelineSummaryApi];
 }

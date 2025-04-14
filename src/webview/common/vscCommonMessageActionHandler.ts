@@ -1,5 +1,6 @@
 import { defaultActionGuard } from '@atlassianlabs/guipi-core-controller';
 import { env, Uri } from 'vscode';
+
 import { IntegrationsLinkParams } from '../../atlclients/authInfo';
 import { HTTPClient } from '../../bitbucket/httpClient';
 import { showIssue } from '../../commands/jira/showIssue';
@@ -109,6 +110,10 @@ export class VSCCommonMessageHandler implements CommonActionMessageHandler {
             case CommonActionType.Cancel: {
                 this._cancelMan.get(msg.abortKey)?.cancel(msg.reason);
                 this._cancelMan.delete(msg.abortKey);
+                break;
+            }
+            case CommonActionType.SendAnalytics: {
+                this._analytics.fireUIErrorEvent(msg.errorInfo);
                 break;
             }
             default: {

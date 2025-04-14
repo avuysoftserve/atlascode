@@ -5,6 +5,7 @@ import {
     Transition,
 } from '@atlassianlabs/jira-pi-common-models';
 import * as vscode from 'vscode';
+
 import { issueTransitionedEvent } from '../analytics';
 import { DetailedSiteInfo, emptySiteInfo } from '../atlclients/authInfo';
 import { Commands } from '../commands';
@@ -39,7 +40,8 @@ async function performTransition(issueKey: string, transition: Transition, site:
         const client = await Container.clientManager.jiraClient(site);
         await client.transitionIssue(issueKey, transition.id);
 
-        vscode.commands.executeCommand(Commands.RefreshJiraExplorer);
+        vscode.commands.executeCommand(Commands.RefreshAssignedWorkItemsExplorer);
+        vscode.commands.executeCommand(Commands.RefreshCustomJqlExplorer);
 
         issueTransitionedEvent(site, issueKey).then((e) => {
             Container.analyticsClient.sendTrackEvent(e);

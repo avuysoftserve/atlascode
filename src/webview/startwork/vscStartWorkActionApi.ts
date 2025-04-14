@@ -1,12 +1,13 @@
 import { MinimalIssue, Transition } from '@atlassianlabs/jira-pi-common-models';
-import { Logger } from 'src/logger';
+
 import { DetailedSiteInfo } from '../../atlclients/authInfo';
 import { clientForSite } from '../../bitbucket/bbUtils';
-import { Repo, WorkspaceRepo, emptyRepo } from '../../bitbucket/model';
+import { emptyRepo, Repo, WorkspaceRepo } from '../../bitbucket/model';
 import { StartWorkBranchTemplate } from '../../config/model';
 import { Container } from '../../container';
 import { ConfigSection, ConfigSubSection } from '../../lib/ipc/models/config';
 import { StartWorkActionApi } from '../../lib/webview/controller/startwork/startWorkActionApi';
+import { Logger } from '../../logger';
 import { Branch, RefType } from '../../typings/git';
 
 export class VSCStartWorkActionApi implements StartWorkActionApi {
@@ -50,6 +51,7 @@ export class VSCStartWorkActionApi implements StartWorkActionApi {
         destinationBranch: string,
         sourceBranch: Branch,
         remote: string,
+        pushBranchToRemote: boolean,
     ): Promise<void> {
         const scm = Container.bitbucketContext.getRepositoryScm(wsRepo.rootUri)!;
 
@@ -59,14 +61,14 @@ export class VSCStartWorkActionApi implements StartWorkActionApi {
             await scm.getBranch(destinationBranch);
             await scm.checkout(destinationBranch);
             return;
-        } catch (_) {}
+        } catch {}
 
         // checkout if there's a matching remote branch (checkout will track remote branch automatically)
         try {
             await scm.getBranch(`remotes/${remote}/${destinationBranch}`);
             await scm.checkout(destinationBranch);
             return;
-        } catch (_) {}
+        } catch {}
 
         // no existing branches, create a new one
         await scm.createBranch(
@@ -74,8 +76,10 @@ export class VSCStartWorkActionApi implements StartWorkActionApi {
             true,
             `${sourceBranch.type === RefType.RemoteHead ? 'remotes/' : ''}${sourceBranch.name}`,
         );
-        await scm.push(remote, destinationBranch, true);
-        return;
+
+        if (pushBranchToRemote) {
+            await scm.push(remote, destinationBranch, true);
+        }
     }
 
     getStartWorkConfig(): StartWorkBranchTemplate {

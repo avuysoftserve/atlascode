@@ -7,6 +7,7 @@ import {
     MinimalIssueOrKeyAndSite,
 } from '@atlassianlabs/jira-pi-common-models';
 import * as vscode from 'vscode';
+
 import { DetailedSiteInfo, emptySiteInfo, ProductJira } from '../../atlclients/authInfo';
 import { Container } from '../../container';
 import { fetchMinimalIssue, getCachedOrFetchMinimalIssue } from '../../jira/fetchIssue';
@@ -70,7 +71,7 @@ export async function showIssueForKey(issueKey?: string) {
     if (issueKey) {
         try {
             issue = await issueForKey(issueKey);
-        } catch (e) {
+        } catch {
             //not found
         }
     }

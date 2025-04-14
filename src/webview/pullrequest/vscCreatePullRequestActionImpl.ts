@@ -1,6 +1,7 @@
 import { MinimalIssue } from '@atlassianlabs/jira-pi-common-models';
 import axios, { CancelToken, CancelTokenSource } from 'axios';
-import { Uri, commands } from 'vscode';
+import { commands, Uri } from 'vscode';
+
 import { DetailedSiteInfo, ProductJira } from '../../atlclients/authInfo';
 import { clientForSite } from '../../bitbucket/bbUtils';
 import { BitbucketSite, Commit, FileDiff, FileStatus, PullRequest, User, WorkspaceRepo } from '../../bitbucket/model';
@@ -11,13 +12,13 @@ import { parseJiraIssueKeys } from '../../jira/issueKeyParser';
 import { transitionIssue } from '../../jira/transitionIssue';
 import { CancellationManager } from '../../lib/cancellation';
 import { SubmitCreateRequestAction } from '../../lib/ipc/fromUI/createPullRequest';
-import { RepoData, emptyRepoData } from '../../lib/ipc/toUI/createPullRequest';
+import { emptyRepoData, RepoData } from '../../lib/ipc/toUI/createPullRequest';
 import { CreatePullRequestActionApi } from '../../lib/webview/controller/pullrequest/createPullRequestActionApi';
 import { Logger } from '../../logger';
 import { Branch, Commit as GitCommit } from '../../typings/git';
 import { Shell } from '../../util/shell';
-import { PullRequestNodeDataProvider } from '../../views/pullRequestNodeDataProvider';
 import { FileDiffQueryParams } from '../../views/pullrequest/diffViewHelper';
+import { PullRequestNodeDataProvider } from '../../views/pullRequestNodeDataProvider';
 
 export class VSCCreatePullRequestActionApi implements CreatePullRequestActionApi {
     constructor(private cancellationManager: CancellationManager) {}
@@ -85,7 +86,7 @@ export class VSCCreatePullRequestActionApi implements CreatePullRequestActionApi
     async fetchUsers(site: BitbucketSite, query: string, abortKey?: string | undefined): Promise<User[]> {
         const client = await Container.clientManager.bbClient(site.details);
 
-        var cancelToken: CancelToken | undefined = undefined;
+        let cancelToken: CancelToken | undefined = undefined;
 
         if (abortKey) {
             const signal: CancelTokenSource = axios.CancelToken.source();
@@ -103,7 +104,7 @@ export class VSCCreatePullRequestActionApi implements CreatePullRequestActionApi
             if (jiraIssueKeys.length > 0) {
                 try {
                     return await issueForKey(jiraIssueKeys[0]);
-                } catch (e) {
+                } catch {
                     //not found
                 }
             }
@@ -125,7 +126,7 @@ export class VSCCreatePullRequestActionApi implements CreatePullRequestActionApi
         try {
             const bbApi = await clientForSite(site);
             commits = await bbApi.repositories.getCommitsForRefs(site, sourceBranchName, destinationBranchName);
-        } catch (e) {}
+        } catch {}
 
         const shell = new Shell(Uri.parse(wsRepo.rootUri).fsPath);
         const diff = await shell.output(
@@ -228,7 +229,7 @@ export class VSCCreatePullRequestActionApi implements CreatePullRequestActionApi
         //git diff-index --name-status will return lines in the form {status}        {name of file}
         //It's important to note that the order of the files will be identical to git diff --numstat, and we can use that to our advantage
         const namestatusLines = await shell.lines(`git diff --name-status -C -M50 ${forkPoint} ${sourceBranch.commit}`);
-        let fileDiffs: FileDiff[] = [];
+        const fileDiffs: FileDiff[] = [];
         for (let i = 0; i < numstatLines.length; i++) {
             const numstatWords = numstatLines[i].split(/\s+/);
             const namestatusWords = namestatusLines[i].split(/\s+/);
