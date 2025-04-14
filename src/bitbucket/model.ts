@@ -4,6 +4,7 @@ import { PipelineApiImpl } from '../pipelines/pipelines';
 import { Remote, Repository } from '../typings/git';
 import { FileDiffQueryParams } from '../views/pullrequest/diffViewHelper';
 import { BitbucketIssuesApiImpl } from './bitbucket-cloud/bbIssues';
+import { PullRequestTitlesNode } from 'src/views/pullrequest/pullRequestNode';
 
 export type BitbucketSite = {
     details: DetailedSiteInfo;
@@ -259,6 +260,7 @@ export interface PullRequest {
     site: BitbucketSite;
     data: PullRequestData;
     workspaceRepo?: WorkspaceRepo;
+    titleNode?: PullRequestTitlesNode;
     // TODO figure out what to do when source remote is different from destination remote
     // sourceRemote: sourceRemote,
 }
@@ -292,6 +294,7 @@ const emptyPullRequestData: PullRequestData = {
 export const emptyPullRequest: PullRequest = {
     site: emptyBitbucketSite,
     data: emptyPullRequestData,
+    titleNode: undefined,
 };
 
 export interface PaginatedPullRequests {
@@ -385,6 +388,7 @@ export interface PullRequestApi {
         lineMeta?: 'ADDED' | 'REMOVED',
     ): Promise<Comment>;
     getFileContent(site: BitbucketSite, commitHash: string, path: string): Promise<string>;
+    getPullRequestDiff(pr: PullRequest): Promise<string>;
 }
 
 export interface RepositoriesApi {

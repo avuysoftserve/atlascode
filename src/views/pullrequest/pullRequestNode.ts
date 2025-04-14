@@ -18,7 +18,14 @@ import { CommitSectionNode } from '../nodes/commitSectionNode';
 import { RelatedBitbucketIssuesNode } from '../nodes/relatedBitbucketIssuesNode';
 import { RelatedIssuesNode } from '../nodes/relatedIssuesNode';
 import { SimpleNode } from '../nodes/simpleNode';
-import { createFileChangesNodes } from './diffViewHelper';
+import { createFileChangesNodes, PRDirectory } from './diffViewHelper';
+import { DirectoryNode } from '../nodes/directoryNode';
+// @ts-ignore TODO: fix noImplicitAny error here
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { Diff } from '@atlassian/bitkit-diff';
+// @ts-ignore TODO: fix noImplicitAny error here
+// eslint-disable-next-line import/no-extraneous-dependencies
+import diffParser from '@atlassian/diffparser';
 
 export const PullRequestContextValue = 'pullrequest';
 export class PullRequestTitlesNode extends AbstractBaseNode {
@@ -26,6 +33,7 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
     public prHref: string;
     private loadedChildren: AbstractBaseNode[] = [];
     private isLoading = false;
+    private parsedDiffCache: Map<string, any> = new Map();
 
     constructor(
         private pr: PullRequest,
@@ -35,6 +43,7 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         super(parent);
         this.treeItem = this.createTreeItem();
         this.prHref = pr.data!.url;
+        pr.titleNode = this;
 
         //If the PR node belongs to a server repo, we don't want to preload it because we can't cache nodes based on update times.
         //BBServer update times omit actions like comments, task creation, etc. so we don't know if the PR we have is really up to date without
@@ -80,6 +89,10 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         return this.treeItem;
     }
 
+    getParsedCache() {
+        return this.parsedDiffCache;
+    }
+
     getPR() {
         return this.pr;
     }
@@ -90,27 +103,24 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
 
     async criticalData(
         criticalPromise: Promise<[FileDiff[], PaginatedComments]>,
+        rootDirectory: DirectoryNode,
     ): Promise<[FileDiff[], PaginatedComments, AbstractBaseNode[]]> {
         let fileChangedNodes: AbstractBaseNode[] = [];
         let files: FileDiff[] = [];
         let comments: PaginatedComments = { data: [] };
         try {
             [files, comments] = await criticalPromise;
+            Logger.debug('Fetched files and comments', files, comments);
             fileChangedNodes = await createFileChangesNodes(this.pr, comments, files, [], []);
-            // update loadedChildren with critical data without commits
-            this.loadedChildren = [
-                new DescriptionNode(this.pr, this),
-                ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, [], true)] : []),
-                ...fileChangedNodes,
-            ];
+
+            // Update existing rootDirectory instead of creating new one
+            rootDirectory.getChildren = async () => fileChangedNodes;
         } catch (error) {
             Logger.debug('error fetching pull request details', error);
             this.loadedChildren = [new SimpleNode('⚠️ Error: fetching pull request details failed')];
             this.isLoading = false;
-        } finally {
-            this.refresh();
-            return [files, comments, fileChangedNodes];
         }
+        return [files, comments, fileChangedNodes];
     }
 
     async nonCriticalData(
@@ -118,67 +128,104 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         fileDiffs: FileDiff[],
         allComments: PaginatedComments,
         commits: Commit[],
+        rootDirectory: DirectoryNode,
     ): Promise<void> {
         try {
             const [conflictedFiles, tasks] = await nonCriticalPromise;
+            Logger.debug('Fetched conflicted files and tasks', conflictedFiles, tasks);
             const [jiraIssueNodes, bbIssueNodes, fileNodes] = await Promise.all([
                 this.createRelatedJiraIssueNode(commits, allComments),
                 this.createRelatedBitbucketIssueNode(commits, allComments),
                 createFileChangesNodes(this.pr, allComments, fileDiffs, conflictedFiles, tasks),
             ]);
-            // update loadedChildren with additional data
+
+            // Update existing rootDirectory instead of creating new one
+            rootDirectory.getChildren = async () => fileNodes;
+
             this.loadedChildren = [
                 new DescriptionNode(this.pr, this),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
                 ...jiraIssueNodes,
                 ...bbIssueNodes,
-                ...fileNodes,
+                rootDirectory,
             ];
         } catch (error) {
             Logger.debug('error fetching additional pull request details', error);
-            // Keep existing nodes if additional data fetch fails
         }
     }
 
     async fetchDataAndProcessChildren(): Promise<void> {
-        // Return early if already loading or no PR
         if (this.isLoading || !this.pr) {
             return;
         }
-
         this.isLoading = true;
-        this.loadedChildren = [new DescriptionNode(this.pr, this), new SimpleNode('Loading...')];
-        let fileDiffs: FileDiff[] = [];
-        let allComments: PaginatedComments = { data: [] };
-        let fileChangedNodes: AbstractBaseNode[] = [];
-        const bbApi = await clientForSite(this.pr.site);
-        const criticalPromise = Promise.all([
-            bbApi.pullrequests.getChangedFiles(this.pr),
-            bbApi.pullrequests.getComments(this.pr),
-        ]);
-        const commitsPromise = bbApi.pullrequests.getCommits(this.pr);
-        const nonCriticalPromise = Promise.all([
-            bbApi.pullrequests.getConflictedFiles(this.pr),
-            bbApi.pullrequests.getTasks(this.pr),
-        ]);
-        // Critical data - files, comments, and fileChangedNodes
-        [fileDiffs, allComments, fileChangedNodes] = await this.criticalData(criticalPromise);
-        // get commitsData
-        const commits = await commitsPromise;
-        // update loadedChildren with commits data
-        this.loadedChildren = [
-            new DescriptionNode(this.pr, this),
-            ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
-            ...fileChangedNodes,
-        ];
-        // refresh TreeView
-        this.refresh();
-        // Additional data - conflicts, commits, tasks
-        await this.nonCriticalData(nonCriticalPromise, fileDiffs, allComments, commits);
-        // update Loading to false
-        this.isLoading = false;
-        // refresh TreeView
-        this.refresh();
+
+        // Create Files directory once
+        const filesDirectory: PRDirectory = {
+            name: 'Files',
+            fullPath: '',
+            files: [],
+            subdirs: new Map<string, PRDirectory>(),
+        };
+        const rootDirectory = new DirectoryNode(filesDirectory, this.pr.data.url, 'files', this.pr);
+
+        // Set initial state with empty Files directory
+        this.loadedChildren = [new DescriptionNode(this.pr, this), rootDirectory, new SimpleNode('Loading...')];
+        this.refresh(); // Show initial structure
+
+        try {
+            const bbApi = await clientForSite(this.pr.site);
+
+            // Parse diff and setup file index map
+            const fullDiff = await bbApi.pullrequests.getPullRequestDiff(this.pr);
+            const parsedDiffs = diffParser(fullDiff);
+            const fileIndexMap = new Map<string, string>();
+            parsedDiffs.forEach((diff: Diff) => {
+                if (diff.index?.length > 0) {
+                    const fileIndex = diff.index[0];
+                    const hash = fileIndex.includes('..') ? fileIndex.split('..')[1] : fileIndex;
+                    if (diff.from) {
+                        fileIndexMap.set(diff.from, hash);
+                    }
+                    if (diff.to) {
+                        fileIndexMap.set(diff.to, hash);
+                    }
+                }
+            });
+            this.parsedDiffCache.set('fileIndexMap', fileIndexMap);
+
+            // Fetch data
+            const criticalPromise = Promise.all([
+                bbApi.pullrequests.getChangedFiles(this.pr),
+                bbApi.pullrequests.getComments(this.pr),
+            ]);
+            const commitsPromise = bbApi.pullrequests.getCommits(this.pr);
+            const nonCriticalPromise = Promise.all([
+                bbApi.pullrequests.getConflictedFiles(this.pr),
+                bbApi.pullrequests.getTasks(this.pr),
+            ]);
+
+            // Process critical data
+            const [fileDiffs, allComments] = await this.criticalData(criticalPromise, rootDirectory);
+            const commits = await commitsPromise;
+
+            // Update children list without recreating Files directory
+            this.loadedChildren = [
+                new DescriptionNode(this.pr, this),
+                ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
+                rootDirectory,
+            ];
+            this.refresh();
+
+            // Process non-critical data
+            await this.nonCriticalData(nonCriticalPromise, fileDiffs, allComments, commits, rootDirectory);
+        } catch (error) {
+            Logger.debug('error fetching pull request details', error);
+            this.loadedChildren = [new SimpleNode('⚠️ Error: fetching pull request details failed')];
+        } finally {
+            this.isLoading = false;
+            this.refresh();
+        }
     }
 
     async getChildren(element?: AbstractBaseNode): Promise<AbstractBaseNode[]> {

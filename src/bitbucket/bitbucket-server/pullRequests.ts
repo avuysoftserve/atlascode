@@ -941,6 +941,14 @@ export class ServerPullRequestApi implements PullRequestApi {
         return data;
     }
 
+    async getPullRequestDiff(pr: PullRequest): Promise<string> {
+        const { ownerSlug, repoSlug } = pr.site;
+        const { data } = await this.client.getRaw(
+            `/rest/api/1.0/projects/${ownerSlug}/repos/${repoSlug}/pull-requests/${pr.data.id}/diff`,
+        );
+        return data;
+    }
+
     private async getTaskCount(site: BitbucketSite, prId: string): Promise<number> {
         try {
             return this.getTaskCount_v8(site, prId);
