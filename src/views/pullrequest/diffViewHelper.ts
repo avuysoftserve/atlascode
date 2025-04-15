@@ -116,7 +116,6 @@ export async function getArgsForDiffView(
     const rhsFilePath = fileDiff.newPath;
 
     let fileDisplayName = getFileNameFromPaths(lhsFilePath, rhsFilePath);
-    Logger.debug('lhsFilePath', lhsFilePath, fileDisplayName);
     const comments: Comment[][] = [];
     const commentsMap = getInlineComments(allComments.data);
 
@@ -305,10 +304,10 @@ export async function createFileChangesNodes(
 
         const directoryNodes: DirectoryNode[] = Array.from(
             rootDirectory.subdirs.values(),
-            (subdir) => new DirectoryNode(subdir, section, pr),
+            (subdir) => new DirectoryNode(subdir, section, pr, commitRange?.rhs),
         );
         const childNodes: AbstractBaseNode[] = rootDirectory.files.map(
-            (diffViewArg) => new PullRequestFilesNode(diffViewArg, section, pr),
+            (diffViewArg) => new PullRequestFilesNode(diffViewArg, section, pr, commitRange?.rhs),
         );
         return childNodes.concat(directoryNodes);
     }

@@ -3,7 +3,6 @@ import { PRDirectory } from '../pullrequest/diffViewHelper';
 import { AbstractBaseNode } from './abstractBaseNode';
 import { PullRequestFilesNode } from './pullRequestFilesNode';
 import { Container } from 'src/container';
-import { Logger } from 'src/logger';
 import { PullRequest } from 'src/bitbucket/model';
 import * as crypto from 'crypto';
 
@@ -13,6 +12,7 @@ export class DirectoryNode extends AbstractBaseNode {
         private directoryData: PRDirectory,
         private section: 'files' | 'commits' = 'files',
         private pr: PullRequest,
+        private commitHash?: string,
     ) {
         super();
     }
@@ -29,7 +29,7 @@ export class DirectoryNode extends AbstractBaseNode {
 
         const dirId =
             this.section === 'commits'
-                ? `repo-${repoId}-pr-${prId}-section-${this.section}-commit-${this.pr.data.source.commitHash}-directory-${dirPath}`
+                ? `repo-${repoId}-pr-${prId}-section-${this.section}-commit-${this.commitHash}-directory-${dirPath}`
                 : `repo-${repoId}-pr-${prId}-section-${this.section}-directory-${dirPath}`;
         return crypto.createHash('md5').update(dirId).digest('hex');
     }
@@ -56,10 +56,8 @@ export class DirectoryNode extends AbstractBaseNode {
 
         try {
             this._isDirectClick = true;
-            Logger.debug(`Setting directory ${this.directoryId} checked state to ${value}`);
             Container.checkboxStateManager.setChecked(this.directoryId, value);
 
-            Logger.debug('Propagating state to children');
             this.directoryData.files.forEach((file) => {
                 const fileNode = new PullRequestFilesNode(file, this.section, this.pr);
                 Container.checkboxStateManager.setChecked(fileNode.fileId, value);
@@ -105,8 +103,6 @@ export class DirectoryNode extends AbstractBaseNode {
                 : vscode.TreeItemCheckboxState.Unchecked;
             item.contextValue = `directory${allChecked ? '.checked' : ''}`;
         }
-
-        Logger.debug('directoryId', this.directoryId);
 
         if (!this.isRootFilesDirectory) {
             item.id = this.directoryId;

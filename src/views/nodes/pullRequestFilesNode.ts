@@ -16,6 +16,7 @@ export class PullRequestFilesNode extends AbstractBaseNode {
         private diffViewData: DiffViewArgs,
         private section: 'files' | 'commits' = 'files',
         private pr: PullRequest,
+        private commitHash?: string,
     ) {
         super();
     }
@@ -27,7 +28,7 @@ export class PullRequestFilesNode extends AbstractBaseNode {
 
         const fileId =
             this.section === 'commits'
-                ? `repo-${repoId}-pr-${this.pr.data.id}-section-${this.section}-commit-${this.pr.data.source.commitHash}-file-${this.diffViewData.fileDisplayData.fileDisplayName}-${this.diffViewData.latestFileContentHash}`
+                ? `repo-${repoId}-pr-${this.pr.data.id}-section-${this.section}-commit-${this.commitHash}-file-${this.diffViewData.fileDisplayData.fileDisplayName}-${this.diffViewData.latestFileContentHash}`
                 : `repo-${repoId}-pr-${this.pr.data.id}-section-${this.section}-file-${this.diffViewData.fileDisplayData.fileDisplayName}-${this.diffViewData.latestFileContentHash}`;
         return crypto.createHash('md5').update(fileId).digest('hex');
     }
