@@ -12,7 +12,6 @@
     ],
     "version": "0.0.0",
     "publisher": "atlassian",
-    "isBuiltin": true,
     "license": "SEE LICENSE IN LICENSE",
     "homepage": "https://github.com/atlassian/atlascode/blob/main/HOMEPAGE.md",
     "repository": {

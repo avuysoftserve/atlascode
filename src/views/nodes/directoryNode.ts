@@ -6,6 +6,7 @@ import { Container } from 'src/container';
 import { Logger } from 'src/logger';
 import { PullRequest } from 'src/bitbucket/model';
 export class DirectoryNode extends AbstractBaseNode {
+    isRootFilesDirectory: boolean | undefined;
     constructor(
         private directoryData: PRDirectory,
         private prUrl: string,
@@ -24,11 +25,12 @@ export class DirectoryNode extends AbstractBaseNode {
         const repoUrl = this.prUrl.slice(0, this.prUrl.indexOf('/pull-requests'));
         const repoId = repoUrl.slice(repoUrl.lastIndexOf('/') + 1);
         const dirPath = this.directoryData.fullPath;
+        Logger.debug('directoryData', this.directoryData);
 
         if (this.section === 'commits') {
             return `repo-${repoId}-pr-${prId}-section-${this.section}-commit-${this.commitHash}-directory-${dirPath}`;
         }
-        return `repo-${repoId}-pr-${prId}-section-${this.section}-${dirPath}`;
+        return `repo-${repoId}-pr-${prId}-section-${this.section}-directory-${dirPath}`;
     }
 
     private areAllChildrenChecked(): boolean {
@@ -106,29 +108,35 @@ export class DirectoryNode extends AbstractBaseNode {
 
     async getTreeItem(): Promise<vscode.TreeItem> {
         // For root files folder we do not want to show a checkbox and we want to show the folder icon and we do not want it expanded
-        const isRootFilesDirectory =
+        this.isRootFilesDirectory =
             this.section === 'files' && this.directoryData.name === 'Files' && this.directoryData.fullPath === '';
 
         const item = new vscode.TreeItem(
             this.directoryData.name,
-            isRootFilesDirectory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Expanded,
+            this.isRootFilesDirectory
+                ? vscode.TreeItemCollapsibleState.Collapsed
+                : vscode.TreeItemCollapsibleState.Expanded,
         );
         item.tooltip = this.directoryData.name;
 
-        if (!isRootFilesDirectory) {
+        if (!this.isRootFilesDirectory) {
             item.iconPath = vscode.ThemeIcon.Folder;
         }
 
         const allChecked = this.areAllChildrenChecked();
 
-        if (!isRootFilesDirectory) {
+        if (!this.isRootFilesDirectory) {
             item.checkboxState = this.checked
                 ? vscode.TreeItemCheckboxState.Checked
                 : vscode.TreeItemCheckboxState.Unchecked;
             item.contextValue = `directory${allChecked ? '.checked' : ''}`;
         }
 
-        item.id = this.directoryId;
+        Logger.debug('directoryId', this.directoryId);
+
+        if (!this.isRootFilesDirectory) {
+            item.id = this.directoryId;
+        }
 
         return item;
     }

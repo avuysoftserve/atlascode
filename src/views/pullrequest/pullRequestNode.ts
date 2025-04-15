@@ -18,14 +18,14 @@ import { CommitSectionNode } from '../nodes/commitSectionNode';
 import { RelatedBitbucketIssuesNode } from '../nodes/relatedBitbucketIssuesNode';
 import { RelatedIssuesNode } from '../nodes/relatedIssuesNode';
 import { SimpleNode } from '../nodes/simpleNode';
-import { createFileChangesNodes, PRDirectory } from './diffViewHelper';
-import { DirectoryNode } from '../nodes/directoryNode';
+import { createFileChangesNodes } from './diffViewHelper';
 // @ts-ignore TODO: fix noImplicitAny error here
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Diff } from '@atlassian/bitkit-diff';
 // @ts-ignore TODO: fix noImplicitAny error here
 // eslint-disable-next-line import/no-extraneous-dependencies
 import diffParser from '@atlassian/diffparser';
+import { FilesRootNode } from '../nodes/FilesRootNode';
 
 export const PullRequestContextValue = 'pullrequest';
 export class PullRequestTitlesNode extends AbstractBaseNode {
@@ -103,24 +103,27 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
 
     async criticalData(
         criticalPromise: Promise<[FileDiff[], PaginatedComments]>,
-        rootDirectory: DirectoryNode,
     ): Promise<[FileDiff[], PaginatedComments, AbstractBaseNode[]]> {
         let fileChangedNodes: AbstractBaseNode[] = [];
         let files: FileDiff[] = [];
         let comments: PaginatedComments = { data: [] };
         try {
             [files, comments] = await criticalPromise;
-            Logger.debug('Fetched files and comments', files, comments);
             fileChangedNodes = await createFileChangesNodes(this.pr, comments, files, [], []);
-
-            // Update existing rootDirectory instead of creating new one
-            rootDirectory.getChildren = async () => fileChangedNodes;
+            // update loadedChildren with critical data without commits
+            this.loadedChildren = [
+                new DescriptionNode(this.pr, this),
+                ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, [], true)] : []),
+                new FilesRootNode(fileChangedNodes, this),
+            ];
         } catch (error) {
             Logger.debug('error fetching pull request details', error);
             this.loadedChildren = [new SimpleNode('⚠️ Error: fetching pull request details failed')];
             this.isLoading = false;
+        } finally {
+            this.refresh();
+            return [files, comments, fileChangedNodes];
         }
-        return [files, comments, fileChangedNodes];
     }
 
     async nonCriticalData(
@@ -128,26 +131,21 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         fileDiffs: FileDiff[],
         allComments: PaginatedComments,
         commits: Commit[],
-        rootDirectory: DirectoryNode,
     ): Promise<void> {
         try {
             const [conflictedFiles, tasks] = await nonCriticalPromise;
-            Logger.debug('Fetched conflicted files and tasks', conflictedFiles, tasks);
             const [jiraIssueNodes, bbIssueNodes, fileNodes] = await Promise.all([
                 this.createRelatedJiraIssueNode(commits, allComments),
                 this.createRelatedBitbucketIssueNode(commits, allComments),
                 createFileChangesNodes(this.pr, allComments, fileDiffs, conflictedFiles, tasks),
             ]);
-
-            // Update existing rootDirectory instead of creating new one
-            rootDirectory.getChildren = async () => fileNodes;
-
+            // update loadedChildren with additional data
             this.loadedChildren = [
                 new DescriptionNode(this.pr, this),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
                 ...jiraIssueNodes,
                 ...bbIssueNodes,
-                rootDirectory,
+                new FilesRootNode(fileNodes, this),
             ];
         } catch (error) {
             Logger.debug('error fetching additional pull request details', error);
@@ -160,17 +158,8 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         }
         this.isLoading = true;
 
-        // Create Files directory once
-        const filesDirectory: PRDirectory = {
-            name: 'Files',
-            fullPath: '',
-            files: [],
-            subdirs: new Map<string, PRDirectory>(),
-        };
-        const rootDirectory = new DirectoryNode(filesDirectory, this.pr.data.url, 'files', this.pr);
-
         // Set initial state with empty Files directory
-        this.loadedChildren = [new DescriptionNode(this.pr, this), rootDirectory, new SimpleNode('Loading...')];
+        this.loadedChildren = [new DescriptionNode(this.pr, this), new SimpleNode('Loading...')];
         this.refresh(); // Show initial structure
 
         try {
@@ -206,19 +195,19 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
             ]);
 
             // Process critical data
-            const [fileDiffs, allComments] = await this.criticalData(criticalPromise, rootDirectory);
+            const [fileDiffs, allComments, fileChangedNodes] = await this.criticalData(criticalPromise);
             const commits = await commitsPromise;
 
             // Update children list without recreating Files directory
             this.loadedChildren = [
                 new DescriptionNode(this.pr, this),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
-                rootDirectory,
+                new FilesRootNode(fileChangedNodes, this),
             ];
             this.refresh();
 
             // Process non-critical data
-            await this.nonCriticalData(nonCriticalPromise, fileDiffs, allComments, commits, rootDirectory);
+            await this.nonCriticalData(nonCriticalPromise, fileDiffs, allComments, commits);
         } catch (error) {
             Logger.debug('error fetching pull request details', error);
             this.loadedChildren = [new SimpleNode('⚠️ Error: fetching pull request details failed')];
