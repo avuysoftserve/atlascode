@@ -19,6 +19,7 @@ import { RelatedBitbucketIssuesNode } from '../nodes/relatedBitbucketIssuesNode'
 import { RelatedIssuesNode } from '../nodes/relatedIssuesNode';
 import { SimpleNode } from '../nodes/simpleNode';
 import { createFileChangesNodes } from './diffViewHelper';
+import { FilesRootNode } from '../nodes/FilesRootNode';
 
 export const PullRequestContextValue = 'pullrequest';
 export class PullRequestTitlesNode extends AbstractBaseNode {
@@ -101,7 +102,7 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
             this.loadedChildren = [
                 new DescriptionNode(this.pr, this),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, [], true)] : []),
-                ...fileChangedNodes,
+                new FilesRootNode(fileChangedNodes, this),
             ];
         } catch (error) {
             Logger.debug('error fetching pull request details', error);
@@ -132,7 +133,7 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
                 ...jiraIssueNodes,
                 ...bbIssueNodes,
-                ...fileNodes,
+                new FilesRootNode(fileNodes, this),
             ];
         } catch (error) {
             Logger.debug('error fetching additional pull request details', error);
@@ -148,37 +149,42 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
 
         this.isLoading = true;
         this.loadedChildren = [new DescriptionNode(this.pr, this), new SimpleNode('Loading...')];
-        let fileDiffs: FileDiff[] = [];
-        let allComments: PaginatedComments = { data: [] };
-        let fileChangedNodes: AbstractBaseNode[] = [];
-        const bbApi = await clientForSite(this.pr.site);
-        const criticalPromise = Promise.all([
-            bbApi.pullrequests.getChangedFiles(this.pr),
-            bbApi.pullrequests.getComments(this.pr),
-        ]);
-        const commitsPromise = bbApi.pullrequests.getCommits(this.pr);
-        const nonCriticalPromise = Promise.all([
-            bbApi.pullrequests.getConflictedFiles(this.pr),
-            bbApi.pullrequests.getTasks(this.pr),
-        ]);
-        // Critical data - files, comments, and fileChangedNodes
-        [fileDiffs, allComments, fileChangedNodes] = await this.criticalData(criticalPromise);
-        // get commitsData
-        const commits = await commitsPromise;
-        // update loadedChildren with commits data
-        this.loadedChildren = [
-            new DescriptionNode(this.pr, this),
-            ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
-            ...fileChangedNodes,
-        ];
-        // refresh TreeView
-        this.refresh();
-        // Additional data - conflicts, commits, tasks
-        await this.nonCriticalData(nonCriticalPromise, fileDiffs, allComments, commits);
-        // update Loading to false
-        this.isLoading = false;
-        // refresh TreeView
-        this.refresh();
+        this.refresh(); // Show initial structure
+
+        try {
+            const bbApi = await clientForSite(this.pr.site);
+            const criticalPromise = Promise.all([
+                bbApi.pullrequests.getChangedFiles(this.pr),
+                bbApi.pullrequests.getComments(this.pr),
+            ]);
+            const commitsPromise = bbApi.pullrequests.getCommits(this.pr);
+            const nonCriticalPromise = Promise.all([
+                bbApi.pullrequests.getConflictedFiles(this.pr),
+                bbApi.pullrequests.getTasks(this.pr),
+            ]);
+
+            // Critical data - files, comments, and fileChangedNodes
+            const [fileDiffs, allComments, fileChangedNodes] = await this.criticalData(criticalPromise);
+            // get commitsData
+            const commits = await commitsPromise;
+            // update loadedChildren with commits data
+            this.loadedChildren = [
+                new DescriptionNode(this.pr, this),
+                ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
+                new FilesRootNode(fileChangedNodes, this),
+            ];
+            // refresh TreeView
+            this.refresh();
+            // Additional data - conflicts, commits, tasks
+            await this.nonCriticalData(nonCriticalPromise, fileDiffs, allComments, commits);
+        } catch (error) {
+            Logger.debug('error fetching pull request details', error);
+            this.loadedChildren = [new SimpleNode('⚠️ Error: fetching pull request details failed')];
+        } finally {
+            this.isLoading = false;
+            // refresh TreeView
+            this.refresh();
+        }
     }
 
     async getChildren(element?: AbstractBaseNode): Promise<AbstractBaseNode[]> {
