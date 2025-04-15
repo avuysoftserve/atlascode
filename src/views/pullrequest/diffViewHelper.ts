@@ -20,6 +20,8 @@ import { PullRequestFilesNode } from '../nodes/pullRequestFilesNode';
 import { SimpleNode } from '../nodes/simpleNode';
 import { PullRequestNodeDataProvider } from '../pullRequestNodeDataProvider';
 import { PullRequestCommentController } from './prCommentController';
+import { GitContentProvider } from '../gitContentProvider';
+import * as crypto from 'crypto';
 
 export interface DiffViewArgs {
     diffArgs: any[];
@@ -114,6 +116,7 @@ export async function getArgsForDiffView(
     const rhsFilePath = fileDiff.newPath;
 
     let fileDisplayName = getFileNameFromPaths(lhsFilePath, rhsFilePath);
+    Logger.debug('lhsFilePath', lhsFilePath, fileDisplayName);
     const comments: Comment[][] = [];
     const commentsMap = getInlineComments(allComments.data);
 
@@ -198,13 +201,12 @@ export async function getArgsForDiffView(
         rhsUri,
         fileDisplayName,
     ];
-
-    let blobHash: string | undefined;
-    const parsedCache = pr.titleNode?.getParsedCache?.();
-    const fileIndexMap = parsedCache?.get('fileIndexMap') || fileDisplayName;
-    if (fileIndexMap) {
-        blobHash = fileIndexMap.get(fileDiff.newPath || '') || fileIndexMap.get(fileDiff.oldPath || '');
-    }
+    const gitContentProvider = new GitContentProvider(Container.bitbucketContext);
+    const [rhsContent] = await Promise.all([
+        gitContentProvider.provideTextDocumentContent(rhsUri, new vscode.CancellationTokenSource().token),
+    ]);
+    const contentHash = crypto.createHash('md5').update(`${rhsContent}`).digest('hex');
+    const blobHash = contentHash;
 
     return {
         diffArgs: diffArgs,

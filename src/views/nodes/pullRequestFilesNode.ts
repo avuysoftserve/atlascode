@@ -30,9 +30,9 @@ export class PullRequestFilesNode extends AbstractBaseNode {
         const repoId = repoUrl.slice(repoUrl.lastIndexOf('/') + 1);
 
         if (this.section === 'commits') {
-            return `repo-${repoId}-pr-${this.pr.data.id}-section-${this.section}-commit-${this.commitHash}-file-${this.diffViewData.blobHash}`;
+            return `repo-${repoId}-pr-${this.pr.data.id}-section-${this.section}-commit-${this.commitHash}-file-${this.diffViewData.fileDisplayData.fileDisplayName}-${this.diffViewData.blobHash}`;
         }
-        return `repo-${repoId}-pr-${this.pr.data.id}-section-${this.section}-file-${this.diffViewData.blobHash}`;
+        return `repo-${repoId}-pr-${this.pr.data.id}-section-${this.section}-file-${this.diffViewData.fileDisplayData.fileDisplayName}-${this.diffViewData.blobHash}`;
     }
 
     get checked(): boolean {
