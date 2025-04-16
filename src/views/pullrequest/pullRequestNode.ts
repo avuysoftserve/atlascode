@@ -64,6 +64,12 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         item.iconPath = vscode.Uri.parse(this.pr.data!.author!.avatarUrl);
         item.contextValue = PullRequestContextValue;
         item.resourceUri = vscode.Uri.parse(this.pr.data.url);
+        item.command = {
+            command: Commands.BitbucketShowPullRequestDetails,
+            title: 'Open pull request details',
+            arguments: [this.pr],
+        };
+
         let dateString = '';
         if (typeof this.pr.data.updatedTs === 'number') {
             dateString = formatDistanceToNow(new Date(this.pr.data.updatedTs), {
@@ -102,7 +108,6 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
             fileChangedNodes = await createFileChangesNodes(this.pr, comments, files, [], []);
             // update loadedChildren with critical data without commits
             this.loadedChildren = [
-                new DescriptionNode(this.pr),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, [], true)] : []),
                 ...fileChangedNodes,
             ];
@@ -130,7 +135,6 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
             ]);
             // update loadedChildren with additional data
             this.loadedChildren = [
-                new DescriptionNode(this.pr),
                 ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
                 ...jiraIssueNodes,
                 ...fileNodes,
@@ -148,7 +152,7 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         }
 
         this.isLoading = true;
-        this.loadedChildren = [new DescriptionNode(this.pr), new SimpleNode('Loading...')];
+        this.loadedChildren = [new SimpleNode('Loading...')];
         let fileDiffs: FileDiff[] = [];
         let allComments: PaginatedComments = { data: [] };
         let fileChangedNodes: AbstractBaseNode[] = [];
@@ -168,7 +172,6 @@ export class PullRequestTitlesNode extends AbstractBaseNode {
         const commits = await commitsPromise;
         // update loadedChildren with commits data
         this.loadedChildren = [
-            new DescriptionNode(this.pr),
             ...(this.pr.site.details.isCloud ? [new CommitSectionNode(this.pr, commits)] : []),
             ...fileChangedNodes,
         ];

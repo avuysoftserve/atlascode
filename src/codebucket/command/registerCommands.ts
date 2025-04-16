@@ -1,4 +1,5 @@
-import { commands, ExtensionContext } from 'vscode';
+import { FileDecorationProvider } from 'src/views/nodes/pullRequestFilesNode';
+import { commands, ExtensionContext, window } from 'vscode';
 
 import { CopyBitbucketPullRequestCommand } from './command-copy-pullreqest';
 import { OpenInBitbucketCommand } from './command-open';
@@ -34,4 +35,6 @@ export function activate(context: ExtensionContext) {
         copyPullRequest.run(),
     );
     context.subscriptions.push(copyPullRequestCmd);
+    const decorationProvider = new FileDecorationProvider();
+    context.subscriptions.push(window.registerFileDecorationProvider(decorationProvider));
 }
