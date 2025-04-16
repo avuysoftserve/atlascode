@@ -12,7 +12,7 @@ enum CodebucketCommands {
     CopyPullRequest = 'atlascode.bb.copyPullRequest',
 }
 
-function registerCommands(context: ExtensionContext) {
+export function activate(context: ExtensionContext) {
     const openInBitbucket = new OpenInBitbucketCommand();
     const openInBitbucketCmd = commands.registerCommand(CodebucketCommands.OpenInBitbucket, () =>
         openInBitbucket.run(),
@@ -34,8 +34,4 @@ function registerCommands(context: ExtensionContext) {
         copyPullRequest.run(),
     );
     context.subscriptions.push(copyPullRequestCmd);
-}
-
-export function activate(context: ExtensionContext) {
-    registerCommands(context);
 }
