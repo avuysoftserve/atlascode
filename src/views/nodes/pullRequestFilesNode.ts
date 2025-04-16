@@ -4,14 +4,68 @@ import * as vscode from 'vscode';
 import { FileStatus } from '../../bitbucket/model';
 import { Commands } from '../../commands';
 import { configuration } from '../../config/configuration';
-import { Resources } from '../../resources';
 import { DiffViewArgs } from '../pullrequest/diffViewHelper';
-import { PullRequestContextValue } from '../pullrequest/pullRequestNode';
 import { AbstractBaseNode } from './abstractBaseNode';
+
+export class FileDecorationProvider implements vscode.FileDecorationProvider {
+    private _onDidChangeFileDecorations = new vscode.EventEmitter<vscode.Uri[]>();
+    readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
+
+    provideFileDecoration(
+        uri: vscode.Uri,
+        _token: vscode.CancellationToken,
+    ): vscode.ProviderResult<vscode.FileDecoration> {
+        try {
+            const params = JSON.parse(uri.query);
+            const status = params.status as FileStatus;
+            const hasComments = params.hasComments;
+            if (status) {
+                return {
+                    badge: hasComments ? `💬${status}` : status,
+                    color: this.getColor(status),
+                    tooltip: hasComments ? `File has comments` : undefined,
+                    propagate: false,
+                };
+            }
+        } catch (e) {
+            console.error('Error in provideFileDecoration:', e);
+        }
+        return undefined;
+    }
+
+    private getColor(status: FileStatus): vscode.ThemeColor {
+        switch (status) {
+            case FileStatus.MODIFIED:
+                return new vscode.ThemeColor('gitDecoration.modifiedResourceForeground');
+            case FileStatus.ADDED:
+                return new vscode.ThemeColor('gitDecoration.addedResourceForeground');
+            case FileStatus.DELETED:
+                return new vscode.ThemeColor('gitDecoration.deletedResourceForeground');
+            case FileStatus.RENAMED:
+                return new vscode.ThemeColor('gitDecoration.renamedResourceForeground');
+            case FileStatus.CONFLICT:
+                return new vscode.ThemeColor('gitDecoration.conflictingResourceForeground');
+            case FileStatus.COPIED:
+                return new vscode.ThemeColor('gitDecoration.addedResourceForeground');
+            default:
+                return new vscode.ThemeColor('gitDecoration.modifiedResourceForeground');
+        }
+    }
+}
 
 export class PullRequestFilesNode extends AbstractBaseNode {
     constructor(private diffViewData: DiffViewArgs) {
         super();
+    }
+
+    createFileChangeUri(fileName: string, status: FileStatus, prUrl: string, hasComments: boolean): vscode.Uri {
+        return vscode.Uri.parse(`${prUrl}/${fileName}`).with({
+            scheme: 'pullRequest',
+            query: JSON.stringify({
+                status: status,
+                hasComments: hasComments,
+            }),
+        });
     }
 
     async getTreeItem(): Promise<vscode.TreeItem> {
@@ -20,10 +74,7 @@ export class PullRequestFilesNode extends AbstractBaseNode {
         if (configuration.get<boolean>('bitbucket.explorer.nestFilesEnabled')) {
             fileDisplayString = path.basename(itemData.fileDisplayName);
         }
-        const item = new vscode.TreeItem(
-            `${itemData.numberOfComments > 0 ? '💬 ' : ''}${fileDisplayString}`,
-            vscode.TreeItemCollapsibleState.None,
-        );
+        const item = new vscode.TreeItem(fileDisplayString, vscode.TreeItemCollapsibleState.None);
         item.tooltip = itemData.fileDisplayName;
         item.command = {
             command: Commands.ViewDiff,
@@ -31,26 +82,13 @@ export class PullRequestFilesNode extends AbstractBaseNode {
             arguments: this.diffViewData.diffArgs,
         };
 
-        item.contextValue = PullRequestContextValue;
-        item.resourceUri = vscode.Uri.parse(`${itemData.prUrl}#chg-${itemData.fileDisplayName}`);
-        switch (itemData.fileDiffStatus) {
-            case FileStatus.ADDED:
-                item.iconPath = Resources.icons.get('add-circle');
-                break;
-            case FileStatus.DELETED:
-                item.iconPath = Resources.icons.get('delete');
-                break;
-            case FileStatus.CONFLICT:
-                item.iconPath = Resources.icons.get('warning');
-                break;
-            default:
-                item.iconPath = Resources.icons.get('edit');
-                break;
-        }
-
-        if (this.diffViewData.fileDisplayData.isConflicted) {
-            item.iconPath = Resources.icons.get('warning');
-        }
+        item.resourceUri = this.createFileChangeUri(
+            itemData.fileDisplayName,
+            itemData.fileDiffStatus,
+            itemData.prUrl,
+            itemData.numberOfComments > 0,
+        );
+        item.iconPath = undefined;
 
         return item;
     }
