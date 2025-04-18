@@ -78,12 +78,18 @@ export class OnlineDetector extends Disposable {
 
     private async runOnlineChecks(): Promise<boolean> {
         const urlList = Container.config.onlineCheckerUrls.slice();
-        const operation = retry.operation({ retries: 4 });
 
-        return new Promise((resolve) => {
+        return new Promise<boolean>((resolve) => {
+            const operation = retry.operation({
+                retries: 4,
+                factor: 2,
+                minTimeout: 1000,
+                maxTimeout: 5000,
+            });
+
             operation.attempt(async (currentAttempt) => {
                 try {
-                    await Promise.any(
+                    const result = await Promise.any(
                         urlList.map((url) => {
                             return (async () => {
                                 Logger.debug(`Online check attempting to connect to ${url}`);
@@ -93,12 +99,16 @@ export class OnlineDetector extends Disposable {
                             })();
                         }),
                     );
-                    resolve(true);
+                    resolve(result);
                 } catch (error) {
                     Logger.debug(
                         `Online check attempt ${currentAttempt} failed. There are ${operation.attempts()} retries left.`,
                     );
+
+                    // operation.retry() will return false when no more retries should be made
+                    // and true when a retry will be performed
                     if (!operation.retry(error)) {
+                        // No more retries left
                         resolve(false);
                     }
                 }
