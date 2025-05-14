@@ -1123,7 +1123,7 @@
                 },
                 "atlascode.bitbucket.explorer.pullRequestsOverview.enabled": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Enable pull requests overview tree view",
                     "scope": "window"
                 },
