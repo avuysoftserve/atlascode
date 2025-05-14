@@ -7,6 +7,8 @@ export const BitbucketEnabledKey = 'bitbucket.enabled';
 export const JiraHoverProviderConfigurationKey = 'jira.hover.enabled';
 export const AssignedJiraItemsViewId = 'atlascode.views.jira.assignedWorkItemsTreeView';
 export const BitbucketPullRequestsOverviewConfigurationKey = 'bitbucket.explorer.pullRequestsOverview.enabled';
+export const BitbucketPullRequestsOverviewWorkspaceConfigurationKey =
+    'bitbucket.explorer.pullRequestsOverview.workspace';
 export const BitbucketRepositoryBasedPullRequestsConfigurationKey =
     'bitbucket.explorer.repositoryBasedPullRequestView.enabled';
 export const PullRequestTreeViewId = 'atlascode.views.bb.pullrequestsTreeView';

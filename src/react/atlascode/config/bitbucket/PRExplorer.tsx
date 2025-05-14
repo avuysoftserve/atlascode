@@ -2,9 +2,11 @@ import { ToggleWithLabel } from '@atlassianlabs/guipi-core-components';
 import { Grid, makeStyles, Switch, Theme, Typography } from '@material-ui/core';
 import React, { memo, useCallback, useContext, useEffect, useState } from 'react';
 
+import { DetailedSiteInfo } from '../../../../atlclients/authInfo';
 import { ConfigSection } from '../../../../lib/ipc/models/config';
 import { IntervalInput } from '../../common/IntervalInput';
 import { ConfigControllerContext } from '../configController';
+import { WorkspaceSelector } from './WorkspaceSelector';
 
 type PRExplorerProps = {
     enabled: boolean;
@@ -15,6 +17,8 @@ type PRExplorerProps = {
     refreshInterval: number;
     pullRequestsEnabled: boolean;
     pullRequestsOverviewEnabled: boolean;
+    pullRequestsOverviewWorkspace: string;
+    site: DetailedSiteInfo | undefined;
 };
 
 const useStyles = makeStyles(
@@ -36,6 +40,8 @@ export const PRExplorer: React.FunctionComponent<PRExplorerProps> = memo(
         refreshInterval,
         pullRequestsEnabled,
         pullRequestsOverviewEnabled,
+        pullRequestsOverviewWorkspace,
+        site,
     }) => {
         const classes = useStyles();
         const controller = useContext(ConfigControllerContext);
@@ -45,6 +51,12 @@ export const PRExplorer: React.FunctionComponent<PRExplorerProps> = memo(
         const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
             const changes = Object.create(null);
             changes[`${ConfigSection.Bitbucket}.${e.target.value}`] = e.target.checked;
+            setChanges(changes);
+        }, []);
+
+        const updateWorkspace = useCallback((workspace: string) => {
+            const changes = Object.create(null);
+            changes[`${ConfigSection.Bitbucket}.explorer.pullRequestsOverview.workspace`] = workspace;
             setChanges(changes);
         }, []);
 
@@ -81,23 +93,39 @@ export const PRExplorer: React.FunctionComponent<PRExplorerProps> = memo(
                     />
                 </Grid>
                 <Grid item>
-                    <ToggleWithLabel
-                        control={
-                            <Switch
-                                className={classes.indent}
-                                size="small"
-                                color="primary"
-                                id="bbPullRequestsOverviewEnabled"
-                                value="explorer.pullRequestsOverview.enabled"
-                                checked={!!pullRequestsOverviewEnabled}
-                                disabled={!enabled}
-                                onChange={handleChange}
+                    <Grid container direction="row" alignItems="center">
+                        <Grid item>
+                            <ToggleWithLabel
+                                control={
+                                    <Switch
+                                        className={classes.indent}
+                                        size="small"
+                                        color="primary"
+                                        id="bbPullRequestsOverviewEnabled"
+                                        value="explorer.pullRequestsOverview.enabled"
+                                        checked={!!pullRequestsOverviewEnabled}
+                                        disabled={!enabled}
+                                        onChange={handleChange}
+                                    />
+                                }
+                                label="Enable all your Bitbucket pull requests explorer"
+                                spacing={1}
+                                variant="body1"
                             />
-                        }
-                        label="Enable all your Bitbucket pull requests explorer"
-                        spacing={1}
-                        variant="body1"
-                    />
+                        </Grid>
+                        <Grid item xs={3}>
+                            {pullRequestsOverviewEnabled &&
+                                (site ? (
+                                    <WorkspaceSelector
+                                        site={site}
+                                        workspace={pullRequestsOverviewWorkspace}
+                                        updateWorkspace={updateWorkspace}
+                                    />
+                                ) : (
+                                    <Typography variant="subtitle2">No Bitbucket cloud site found</Typography>
+                                ))}
+                        </Grid>
+                    </Grid>
                 </Grid>
                 <Grid item>
                     <ToggleWithLabel

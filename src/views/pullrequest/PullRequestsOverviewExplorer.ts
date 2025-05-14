@@ -62,6 +62,10 @@ export class PullRequestsOverviewExplorer extends BitbucketExplorer {
         if (initializing || configuration.changed(e, 'bitbucket.explorer.pullRequestsOverview.enabled')) {
             this.updateExplorerState();
         }
+
+        if (configuration.changed(e, 'bitbucket.explorer.pullRequestsOverview.workspace')) {
+            this.refresh();
+        }
     }
 
     private updateExplorerState() {

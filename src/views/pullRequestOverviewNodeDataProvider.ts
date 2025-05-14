@@ -17,7 +17,6 @@ export class PullRequestsOverviewNodeDataProvider extends BaseTreeDataProvider {
     private readonly _minUpdatedTs: string;
 
     private _disposable: Disposable;
-    private _ownerSlug: string = 'atlassian'; // Hardcoded for now as per requirements
 
     constructor() {
         super();
@@ -51,10 +50,12 @@ export class PullRequestsOverviewNodeDataProvider extends BaseTreeDataProvider {
 
                 const bbApi = await Container.clientManager.bbClient(internalSite);
 
-                if (bbApi.pullrequestsOverview) {
+                const workspace = Container.config.bitbucket.explorer.pullRequestsOverview.workspace;
+
+                if (bbApi.pullrequestsOverview && workspace) {
                     this._isFetchingPullRequests = true;
                     const overviewViewState = await bbApi.pullrequestsOverview.getOverviewViewState(
-                        this._ownerSlug,
+                        workspace,
                         internalSite,
                         this._minUpdatedTs,
                     );
@@ -108,6 +109,10 @@ export class PullRequestsOverviewNodeDataProvider extends BaseTreeDataProvider {
 
         if (!this.cloudSite) {
             return [new SimpleNode('This view is only available on Bitbucket Cloud')];
+        }
+
+        if (!Container.config.bitbucket.explorer.pullRequestsOverview.workspace) {
+            return [new SimpleNode('Please specify a BitBucket Workspace')];
         }
 
         if (element) {

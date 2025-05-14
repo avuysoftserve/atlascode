@@ -2,6 +2,7 @@ import { ExpansionPanel, ExpansionPanelDetails, ExpansionPanelSummary } from '@m
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import React, { memo, useCallback, useEffect, useState } from 'react';
 
+import { DetailedSiteInfo } from '../../../../../atlclients/authInfo';
 import { ConfigSection, ConfigSubSection } from '../../../../../lib/ipc/models/config';
 import { CommonSubpanelProps } from '../../../common/commonPanelProps';
 import { PanelSubtitle } from '../../../common/PanelSubtitle';
@@ -17,6 +18,8 @@ type PRExplorerPanelProps = CommonSubpanelProps & {
     refreshInterval: number;
     pullRequestsEnabled: boolean;
     pullRequestsOverviewEnabled: boolean;
+    pullRequestsOverviewWorkspace: string;
+    site: DetailedSiteInfo | undefined;
 };
 
 export const PRExplorerPanel: React.FunctionComponent<PRExplorerPanelProps> = memo(
@@ -32,6 +35,8 @@ export const PRExplorerPanel: React.FunctionComponent<PRExplorerPanelProps> = me
         refreshInterval,
         pullRequestsEnabled,
         pullRequestsOverviewEnabled,
+        pullRequestsOverviewWorkspace,
+        site,
     }) => {
         const [internalExpanded, setInternalExpanded] = useState(expanded);
 
@@ -72,6 +77,8 @@ export const PRExplorerPanel: React.FunctionComponent<PRExplorerPanelProps> = me
                         refreshInterval={refreshInterval}
                         pullRequestsEnabled={pullRequestsEnabled}
                         pullRequestsOverviewEnabled={pullRequestsOverviewEnabled}
+                        pullRequestsOverviewWorkspace={pullRequestsOverviewWorkspace}
+                        site={site}
                     />
                 </ExpansionPanelDetails>
             </ExpansionPanel>

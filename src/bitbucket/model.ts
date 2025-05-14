@@ -383,6 +383,7 @@ export interface RepositoriesApi {
     getCommitsForRefs(site: BitbucketSite, includeRef: string, excludeRef: string): Promise<Commit[]>;
     getPullRequestIdsForCommit(site: BitbucketSite, commitHash: string): Promise<string[]>;
     fetchImage(url: string): Promise<string>;
+    fetchWorkspaces(query: string, cancelToken?: CancelToken): Promise<string[]>;
 }
 
 export interface BitbucketApi {

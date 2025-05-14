@@ -1127,6 +1127,12 @@
                     "description": "Enable pull requests overview tree view",
                     "scope": "window"
                 },
+                "atlascode.bitbucket.explorer.pullRequestsOverview.workspace": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Workspace used for pull requests overview tree view",
+                    "scope": "window"
+                },
                 "atlascode.bitbucket.explorer.nestFilesEnabled": {
                     "type": "boolean",
                     "default": true,
