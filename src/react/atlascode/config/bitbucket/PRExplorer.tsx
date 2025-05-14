@@ -94,7 +94,7 @@ export const PRExplorer: React.FunctionComponent<PRExplorerProps> = memo(
                                 onChange={handleChange}
                             />
                         }
-                        label="Enable Bitbucket pull requests overview explorer"
+                        label="Enable all your Bitbucket pull requests explorer"
                         spacing={1}
                         variant="body1"
                     />
@@ -113,7 +113,7 @@ export const PRExplorer: React.FunctionComponent<PRExplorerProps> = memo(
                                 onChange={handleChange}
                             />
                         }
-                        label="Enable Repository based pull requests explorer"
+                        label="Enable workspace pull requests explorer"
                         spacing={1}
                         variant="body1"
                     />
