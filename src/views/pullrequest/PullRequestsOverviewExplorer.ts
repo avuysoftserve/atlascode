@@ -51,10 +51,6 @@ export class PullRequestsOverviewExplorer extends BitbucketExplorer {
     }
 
     override async refresh(): Promise<void> {
-        if (!Container.onlineDetector.isOnline()) {
-            return;
-        }
-
         if (this.treeDataProvider) {
             this.treeDataProvider.refresh();
         }

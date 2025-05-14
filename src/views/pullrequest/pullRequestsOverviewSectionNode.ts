@@ -30,7 +30,7 @@ export class PullRequestsOverviewSectionNode extends AbstractBaseNode {
     }
 
     private createChildren(): void {
-        this.children = this.pullRequests.map((pr) => new PullRequestTitlesNode(pr, true, this));
+        this.children = this.pullRequests.map((pr) => new PullRequestTitlesNode(pr, true));
     }
 
     getTreeItem(): vscode.TreeItem {
