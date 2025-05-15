@@ -1,6 +1,7 @@
 import { Uri } from 'vscode';
 
 import { Logger } from '../../logger';
+import { AtlassianNotificationNotifier } from './atlassianNotificationNotifier';
 import { AuthNotifier } from './authNotifier';
 import { BannerDelegate } from './bannerDelegate';
 
@@ -80,6 +81,7 @@ export class NotificationManagerImpl {
             NotificationManagerImpl.instance = new NotificationManagerImpl();
 
             NotificationManagerImpl.instance.notifiers.add(AuthNotifier.getInstance());
+            NotificationManagerImpl.instance.notifiers.add(AtlassianNotificationNotifier.getInstance());
 
             // Note: the badge delegate is not registered here as it needs the context of the tree view
             NotificationManagerImpl.instance.registerDelegate(BannerDelegate.getInstance());

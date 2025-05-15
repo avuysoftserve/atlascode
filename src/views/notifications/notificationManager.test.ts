@@ -17,6 +17,17 @@ jest.mock('../../container', () => ({
         analyticsClient: {
             sendTrackEvent: jest.fn(),
         },
+        credentialManager: {
+            onDidAuthChange: jest.fn(),
+        },
+        config: {
+            jira: {
+                enabled: true,
+            },
+            bitbucket: {
+                enabled: true,
+            },
+        },
     },
 }));
 
