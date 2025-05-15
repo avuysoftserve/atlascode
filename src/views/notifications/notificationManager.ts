@@ -1,5 +1,6 @@
 import { Uri } from 'vscode';
 
+import { Product } from '../../atlclients/authInfo';
 import { Logger } from '../../logger';
 import { AtlassianNotificationNotifier } from './atlassianNotificationNotifier';
 import { AuthNotifier } from './authNotifier';
@@ -7,8 +8,11 @@ import { BannerDelegate } from './bannerDelegate';
 
 export interface AtlasCodeNotification {
     id: string;
+    uri: Uri;
     message: string;
     notificationType: NotificationType;
+    product: Product;
+    credentialId?: string;
 }
 export interface NotificationDelegate {
     onNotificationChange(event: NotificationChangeEvent): void;
@@ -17,7 +21,6 @@ export interface NotificationDelegate {
 
 export interface NotificationChangeEvent {
     action: NotificationAction;
-    uri: Uri;
     notifications: Map<string, AtlasCodeNotification>;
 }
 
@@ -130,7 +133,8 @@ export class NotificationManagerImpl {
         return this.filterNotificationsBySurface(notificationsForUri, notificationSurface);
     }
 
-    public addNotification(uri: Uri, notification: AtlasCodeNotification): void {
+    public addNotification(notification: AtlasCodeNotification): void {
+        const uri = notification.uri;
         Logger.debug(`Adding notification with id ${notification.id} for uri ${uri}`);
         if (!this.notifications.has(uri.toString())) {
             Logger.debug(`No notifications found for uri ${uri}, creating new map`);
@@ -144,36 +148,33 @@ export class NotificationManagerImpl {
         }
 
         notificationsForUri.set(notification.id, notification);
-        this.onNotificationChange(NotificationAction.Added, uri, new Map([[notification.id, notification]]));
+        this.onNotificationChange(NotificationAction.Added, new Map([[notification.id, notification]]));
     }
 
-    public clearNotifications(uri: Uri): void {
+    public clearNotificationsByUri(uri: Uri): void {
         Logger.debug(`Clearing notifications for uri ${uri}`);
         const removedNotifications = this.notifications.get(uri.toString());
         this.notifications.delete(uri.toString());
-        this.onNotificationChange(NotificationAction.Removed, uri, removedNotifications);
+        this.onNotificationChange(NotificationAction.Removed, removedNotifications);
     }
 
     private onNotificationChange(
         action: NotificationAction,
-        uri: Uri,
         notifications: Map<string, AtlasCodeNotification> | undefined,
     ): void {
         notifications = notifications || new Map();
-        Logger.debug(`Sending notification change for ${uri}`);
         this.delegates.forEach((delegate) => {
             const filteredNotifications = this.filterNotificationsBySurface(notifications, delegate.getSurface());
             if (filteredNotifications.size === 0) {
-                Logger.debug(`No notifications for delegate ${delegate} for uri ${uri}`);
+                Logger.debug(`No notifications for delegate ${delegate}`);
                 return;
             }
             const notificationChangeEvent: NotificationChangeEvent = {
                 action,
-                uri,
                 notifications: filteredNotifications,
             };
             delegate.onNotificationChange(notificationChangeEvent);
-            Logger.debug(`Delegate ${delegate} notified for uri ${uri}`);
+            Logger.debug(`Delegate ${delegate} notified`);
         });
     }
 

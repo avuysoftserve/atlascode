@@ -41,7 +41,23 @@ export class BadgeDelegate implements FileDecorationProvider, NotificationDelega
     }
 
     public onNotificationChange(event: NotificationChangeEvent): void {
-        const { uri } = event;
+        const uniqueUris = new Set<Uri>();
+        event.notifications.forEach((notification) => {
+            const uri = notification.uri;
+            if (uri) {
+                uniqueUris.add(uri);
+            }
+        });
+        uniqueUris.forEach((uri) => {
+            this.updateGlobalBadge(uri);
+        });
+    }
+
+    private _onDidChangeFileDecorations = new EventEmitter<undefined | Uri | Uri[]>();
+
+    public readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
+
+    private updateGlobalBadge(uri: Uri) {
         const newBadgeValue = NotificationManagerImpl.getInstance().getNotificationsByUri(
             uri,
             NotificationSurface.Badge,
@@ -53,10 +69,6 @@ export class BadgeDelegate implements FileDecorationProvider, NotificationDelega
         this.setExtensionBadge();
         this._onDidChangeFileDecorations.fire(uri);
     }
-
-    private _onDidChangeFileDecorations = new EventEmitter<undefined | Uri | Uri[]>();
-
-    public readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
 
     public provideFileDecoration(uri: Uri, token: CancellationToken) {
         const newBadgeValue = NotificationManagerImpl.getInstance().getNotificationsByUri(
