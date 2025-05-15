@@ -440,12 +440,12 @@
                 },
                 {
                     "id": "atlascode.views.bb.pullrequestsTreeView",
-                    "name": "Workspace Bitbucket pull requests",
+                    "name": "Bitbucket pull requests",
                     "when": "atlascode:bitbucketExplorerEnabled && config.atlascode.bitbucket.enabled && config.atlascode.bitbucket.explorer.repositoryBasedPullRequestView.enabled"
                 },
                 {
                     "id": "atlascode.views.bb.pullRequestsOverviewTreeView",
-                    "name": "All your Bitbucket pull requests",
+                    "name": "Relevant Bitbucket workspace pull requests",
                     "when": "atlascode:bitbucketExplorerEnabled && config.atlascode.bitbucket.enabled && config.atlascode.bitbucket.explorer.pullRequestsOverview.enabled"
                 },
                 {
