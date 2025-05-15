@@ -1,7 +1,7 @@
 import { Grid, makeStyles, TextField, Typography } from '@material-ui/core';
 import { Autocomplete } from '@material-ui/lab';
 import AwesomeDebouncePromise from 'awesome-debounce-promise';
-import React, { useCallback, useContext, useState } from 'react';
+import React, { Fragment, useCallback, useContext, useState } from 'react';
 import { useAsyncAbortable } from 'react-async-hook';
 import useConstant from 'use-constant';
 
@@ -67,12 +67,12 @@ const useStyles = makeStyles({
 });
 
 type WorkspaceSelectorProps = {
-    site: DetailedSiteInfo;
+    site: DetailedSiteInfo | undefined;
     workspace: string;
     updateWorkspace: (workspace: string) => void;
 };
 
-export const WorkspaceSelector: React.FunctionComponent<WorkspaceSelectorProps> = ({
+export const WorkspaceSelectorDropDown: React.FunctionComponent<WorkspaceSelectorProps> = ({
     site,
     workspace,
     updateWorkspace,
@@ -120,7 +120,7 @@ export const WorkspaceSelector: React.FunctionComponent<WorkspaceSelectorProps> 
     );
 
     return (
-        <div className={classes.container}>
+        <Fragment>
             Workspace:
             <Autocomplete
                 value={workspace}
@@ -152,6 +152,24 @@ export const WorkspaceSelector: React.FunctionComponent<WorkspaceSelectorProps> 
                     </div>
                 )}
             />
+        </Fragment>
+    );
+};
+
+export const WorkspaceSelector: React.FunctionComponent<WorkspaceSelectorProps> = ({
+    site,
+    workspace,
+    updateWorkspace,
+}: WorkspaceSelectorProps) => {
+    const classes = useStyles();
+
+    return (
+        <div className={classes.container}>
+            {site ? (
+                <WorkspaceSelectorDropDown site={site} workspace={workspace} updateWorkspace={updateWorkspace} />
+            ) : (
+                <Typography variant="subtitle2">No Bitbucket cloud site found</Typography>
+            )}
         </div>
     );
 };

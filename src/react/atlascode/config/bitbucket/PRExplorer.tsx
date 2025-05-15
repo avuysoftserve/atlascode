@@ -113,17 +113,14 @@ export const PRExplorer: React.FunctionComponent<PRExplorerProps> = memo(
                                 variant="body1"
                             />
                         </Grid>
-                        <Grid item xs={3}>
-                            {pullRequestsOverviewEnabled &&
-                                (site ? (
-                                    <WorkspaceSelector
-                                        site={site}
-                                        workspace={pullRequestsOverviewWorkspace}
-                                        updateWorkspace={updateWorkspace}
-                                    />
-                                ) : (
-                                    <Typography variant="subtitle2">No Bitbucket cloud site found</Typography>
-                                ))}
+                        <Grid item xs={4}>
+                            {pullRequestsOverviewEnabled && (
+                                <WorkspaceSelector
+                                    site={site}
+                                    workspace={pullRequestsOverviewWorkspace}
+                                    updateWorkspace={updateWorkspace}
+                                />
+                            )}
                         </Grid>
                     </Grid>
                 </Grid>
