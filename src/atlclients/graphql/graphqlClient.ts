@@ -1,4 +1,5 @@
 import { request } from 'graphql-request';
+import { Logger } from 'src/logger';
 
 import { AuthInfo, isOAuthInfo } from '../authInfo';
 
@@ -15,7 +16,20 @@ export async function graphqlRequest<T = any>(
         throw new Error('Auth info is not set.');
     }
 
-    return request<T>(endpoint, document, variables, createHeaders(authInfo));
+    Logger.debug('GraphQL request', {
+        endpoint,
+        document,
+        variables,
+    });
+
+    try {
+        const response = await request<T>(endpoint, document, variables, createHeaders(authInfo));
+        Logger.debug('GraphQL response', { response });
+        return response;
+    } catch (error) {
+        Logger.error(error, 'GraphQL request failed');
+        throw error;
+    }
 }
 
 function createHeaders(authInfo: AuthInfo) {

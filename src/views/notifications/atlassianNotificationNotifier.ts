@@ -56,14 +56,15 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
     private getNotificationDetailsByAuthInfo(authInfo: AuthInfo): AtlasCodeNotification[] {
         // bwieger: implement this
         Logger.debug(`Fetching notifications for ${authInfo.user.id}`);
+
         return [];
     }
 
     private shouldRateLimit(authInfo: AuthInfo): boolean {
-        if (Date.now() - this._lastNotificationSoftPull >= AtlassianNotificationNotifier.NOTIFICATION_INTERVAL_MS) {
+        if (Date.now() - this._lastNotificationSoftPull < AtlassianNotificationNotifier.NOTIFICATION_INTERVAL_MS) {
+            Logger.debug('Not enough time has elapsed since last notification check');
             return true;
         }
-        Logger.debug('Not enough time has elapsed since last notification check');
         return false;
     }
 
@@ -100,13 +101,11 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
         this._lastNotificationSoftPull = Date.now();
         return graphqlRequest(unseenNotificationCountVSCode, {}, authInfo)
             .then((response) => {
-                if (response && response.notifications) {
-                    const unseenCount = response.notifications.unseenNotificationCount;
-                    this._lastUnseenNotificationCount = unseenCount;
-                    return unseenCount;
+                if (response?.notifications?.unseenNotificationCount === undefined) {
+                    Logger.warn('unseenNotificationCount is undefined in the response');
+                    return -1;
                 }
-                Logger.error(new Error('Failed to fetch unseen notification count'));
-                return -1;
+                return response.notifications.unseenNotificationCount;
             })
             .catch((error) => {
                 Logger.error(new Error(`Error fetching unseen notification count: ${error}`));
