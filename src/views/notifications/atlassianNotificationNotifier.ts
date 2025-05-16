@@ -1,4 +1,6 @@
 import { AuthInfo, ProductJira } from '../../atlclients/authInfo';
+import { graphqlRequest } from '../../atlclients/graphql/graphqlClient';
+import { unseenNotificationCountVSCode } from '../../atlclients/graphql/graphqlDocuments';
 import { Container } from '../../container';
 import { Logger } from '../../logger';
 import { AtlasCodeNotification, NotificationNotifier } from './notificationManager';
@@ -21,35 +23,34 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
     private constructor() {}
 
     public fetchNotifications(): void {
-        if (this.shouldGetNotificationDetails()) {
-            this.getNotificationDetails();
-        }
+        Container.credentialManager.getAllValidAuthInfo(ProductJira).then((authInfos: AuthInfo[]) => {
+            authInfos.forEach(async (authInfo: AuthInfo) => {
+                if (await this.shouldGetNotificationDetails(authInfo)) {
+                    this.getNotificationDetails(authInfo);
+                }
+            });
+        });
     }
 
-    private shouldGetNotificationDetails(): boolean {
-        if (this.shouldRateLimit()) {
+    private async shouldGetNotificationDetails(authInfo: AuthInfo): Promise<boolean> {
+        if (this.shouldRateLimit(authInfo)) {
             return false;
         }
 
-        if (this.isNotificationDetailRefreshNeeded()) {
+        if (this.isNotificationDetailRefreshNeeded(authInfo)) {
             return true;
         }
 
-        if (this.hasChangedUnseenNotifications()) {
+        if (await this.hasChangedUnseenNotifications(authInfo)) {
             return true;
         }
 
         return false;
     }
 
-    private getNotificationDetails(): void {
+    private getNotificationDetails(authInfo: AuthInfo): void {
         this._lastDetailPull = Date.now();
-        Container.credentialManager.getAllValidAuthInfo(ProductJira).then((authInfos: AuthInfo[]) => {
-            authInfos.forEach((authInfo: AuthInfo) => {
-                // bwieger: make the actual api call here
-                this.getNotificationDetailsByAuthInfo(authInfo);
-            });
-        });
+        this.getNotificationDetailsByAuthInfo(authInfo);
     }
 
     private getNotificationDetailsByAuthInfo(authInfo: AuthInfo): AtlasCodeNotification[] {
@@ -58,7 +59,7 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
         return [];
     }
 
-    private shouldRateLimit(): boolean {
+    private shouldRateLimit(authInfo: AuthInfo): boolean {
         if (Date.now() - this._lastNotificationSoftPull >= AtlassianNotificationNotifier.NOTIFICATION_INTERVAL_MS) {
             return true;
         }
@@ -66,7 +67,7 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
         return false;
     }
 
-    private isNotificationDetailRefreshNeeded(): boolean {
+    private isNotificationDetailRefreshNeeded(authInfo: AuthInfo): boolean {
         return this.isFirstDetailPull() || this.isLongTimeSinceLastDetailPull();
     }
 
@@ -78,8 +79,11 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
         return Date.now() - this._lastDetailPull >= AtlassianNotificationNotifier.FORCE_DETAILS_UPDATE_INTERVAL_MS;
     }
 
-    private hasChangedUnseenNotifications(): boolean {
-        const currentUnseenCount = this.getUnseenNotifications();
+    private async hasChangedUnseenNotifications(authInfo: AuthInfo): Promise<boolean> {
+        const currentUnseenCount = await this.getUnseenNotifications(authInfo);
+        if (currentUnseenCount === -1) {
+            return false;
+        }
 
         if (currentUnseenCount !== this._lastUnseenNotificationCount) {
             Logger.debug(
@@ -92,8 +96,21 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
         return false;
     }
 
-    private getUnseenNotifications(): number {
+    private getUnseenNotifications(authInfo: AuthInfo): Promise<number> {
         this._lastNotificationSoftPull = Date.now();
-        return 0; // TODO: implement unseen notifications check
+        return graphqlRequest(unseenNotificationCountVSCode, {}, authInfo)
+            .then((response) => {
+                if (response && response.notifications) {
+                    const unseenCount = response.notifications.unseenNotificationCount;
+                    this._lastUnseenNotificationCount = unseenCount;
+                    return unseenCount;
+                }
+                Logger.error(new Error('Failed to fetch unseen notification count'));
+                return -1;
+            })
+            .catch((error) => {
+                Logger.error(new Error(`Error fetching unseen notification count: ${error}`));
+                return -1;
+            });
     }
 }

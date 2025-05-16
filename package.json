@@ -1293,6 +1293,7 @@
         "flatten-anything": "^2.0.1",
         "form-data": "^2.5.2",
         "git-url-parse": "^15.0.0",
+        "graphql-request": "^7.1.2",
         "jwt-decode": "^3.1.2",
         "keytar": "^7.9.0",
         "lodash": "^4.17.21",
