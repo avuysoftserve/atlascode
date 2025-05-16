@@ -1,16 +1,11 @@
-import { ConfigurationChangeEvent, Disposable, window } from 'vscode';
-
-import { AuthInfo, Product, ProductBitbucket, ProductJira } from '../../atlclients/authInfo';
-import { configuration } from '../../config/configuration';
+import { AuthInfo, ProductJira } from '../../atlclients/authInfo';
 import { Container } from '../../container';
 import { Logger } from '../../logger';
 import { AtlasCodeNotification, NotificationNotifier } from './notificationManager';
 
-export class AtlassianNotificationNotifier implements NotificationNotifier, Disposable {
+export class AtlassianNotificationNotifier implements NotificationNotifier {
     private static instance: AtlassianNotificationNotifier;
-    private _disposable: Disposable[] = [];
-    private _jiraEnabled: boolean;
-    private _bitbucketEnabled: boolean;
+
     private _lastUnseenNotificationCount: number = -1;
     private _lastNotificationSoftPull: number = 0;
     private _lastDetailPull: number = 0;
@@ -23,28 +18,7 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
         }
         return AtlassianNotificationNotifier.instance;
     }
-    private constructor() {
-        this._disposable.push(
-            Disposable.from(Container.credentialManager.onDidAuthChange(this.fetchNotifications, this)), // bwieger: this is not right
-        );
-        this._disposable.push(Disposable.from(configuration.onDidChange(this.onDidChangeConfiguration, this)));
-        this._disposable.push(Disposable.from(window.onDidChangeWindowState(this.fetchNotifications, this)));
-        this._jiraEnabled = Container.config.jira.enabled;
-        this._bitbucketEnabled = Container.config.bitbucket.enabled;
-    }
-    public dispose() {
-        this._disposable.forEach((d) => d.dispose());
-    }
-    public onDidChangeConfiguration(e: ConfigurationChangeEvent): void {
-        if (configuration.changed(e, 'jira.enabled')) {
-            this._jiraEnabled = Container.config.jira.enabled;
-            this.onJiraNotificationChange();
-        }
-        if (configuration.changed(e, 'bitbucket.enabled')) {
-            this._bitbucketEnabled = Container.config.bitbucket.enabled;
-            this.onBitbucketNotificationChange();
-        }
-    }
+    private constructor() {}
 
     public fetchNotifications(): void {
         if (this.shouldGetNotificationDetails()) {
@@ -54,11 +28,6 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
 
     private shouldGetNotificationDetails(): boolean {
         if (this.shouldRateLimit()) {
-            return false;
-        }
-
-        if (!window.state.focused) {
-            Logger.debug('Window is not focused, skipping notification check');
             return false;
         }
 
@@ -126,26 +95,5 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
     private getUnseenNotifications(): number {
         this._lastNotificationSoftPull = Date.now();
         return 0; // TODO: implement unseen notifications check
-    }
-
-    private onJiraNotificationChange(): void {
-        if (this._jiraEnabled) {
-            this.fetchNotifications();
-            return;
-        }
-        this.removeNotifications(ProductJira);
-    }
-
-    private onBitbucketNotificationChange(): void {
-        if (this._bitbucketEnabled) {
-            Logger.debug('Bitbucket notifications enabled');
-            return;
-        }
-        this.removeNotifications(ProductBitbucket);
-    }
-
-    private removeNotifications(product: Product): void {
-        // bwieger: implement this
-        Logger.debug(`Removing notifications for ${product.key}`);
     }
 }
