@@ -26,7 +26,7 @@ export const baseConfigFor = (project: string, testExtension: string): Config =>
         '^.+\\.(css|styl|less|sass|scss)$': 'jest-css-modules-transform',
     },
 
-    transformIgnorePatterns: [  '/node_modules/(?!(?:@vscode/webview-ui-toolkit|@microsoft|graphql-request|exenv-es6|@atlaskit)/)'],
+    transformIgnorePatterns: ['/node_modules/(?!(@vscode/webview-ui-toolkit/|@microsoft/|exenv-es6/|@atlaskit/))'],
 
     collectCoverage: true,
     collectCoverageFrom: [
