@@ -1,6 +1,6 @@
 import { AuthInfo, ProductJira } from '../../atlclients/authInfo';
 import { graphqlRequest } from '../../atlclients/graphql/graphqlClient';
-import { unseenNotificationCountVSCode } from '../../atlclients/graphql/graphqlDocuments';
+import { notificationFeedVSCode, unseenNotificationCountVSCode } from '../../atlclients/graphql/graphqlDocuments';
 import { Container } from '../../container';
 import { Logger } from '../../logger';
 import { AtlasCodeNotification, NotificationNotifier } from './notificationManager';
@@ -54,9 +54,9 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
     }
 
     private getNotificationDetailsByAuthInfo(authInfo: AuthInfo): AtlasCodeNotification[] {
-        // bwieger: implement this
         Logger.debug(`Fetching notifications for ${authInfo.user.id}`);
 
+        graphqlRequest(notificationFeedVSCode, { first: 10, productFilter: 'bitbucket' }, authInfo);
         return [];
     }
 

@@ -7,3 +7,36 @@ export const unseenNotificationCountVSCode = gql`
         }
     }
 `;
+
+export const notificationFeedVSCode = gql`
+    query notificationFeedVSCode($first: Int, $productFilter: String) {
+        notifications {
+            notificationFeed(
+                filter: { readStateFilter: unread, categoryFilter: direct, productFilter: $productFilter }
+                flat: true
+                first: $first
+            ) {
+                nodes {
+                    headNotification {
+                        notificationId
+                        timestamp
+                        content {
+                            actor {
+                                displayName
+                            }
+                            bodyItems {
+                                document {
+                                    format
+                                    data
+                                }
+                            }
+                            url
+                            type
+                            message
+                        }
+                    }
+                }
+            }
+        }
+    }
+`;
