@@ -9,13 +9,9 @@ export const unseenNotificationCountVSCode = gql`
 `;
 
 export const notificationFeedVSCode = gql`
-    query notificationFeedVSCode($first: Int, $productFilter: String) {
+    query notificationFeedVSCode($first: Int) {
         notifications {
-            notificationFeed(
-                filter: { readStateFilter: unread, categoryFilter: direct, productFilter: $productFilter }
-                flat: true
-                first: $first
-            ) {
+            notificationFeed(filter: { readStateFilter: unread, categoryFilter: direct }, flat: true, first: $first) {
                 nodes {
                     headNotification {
                         notificationId
