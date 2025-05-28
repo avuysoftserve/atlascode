@@ -116,6 +116,14 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
     }
 
     private filter(node: any): boolean {
+        // Check that notification is within the past week
+        const notificationDate = new Date(node.headNotification.timestamp);
+        const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        if (notificationDate < oneWeekAgo) {
+            Logger.debug('Notification is older than one week, skipping');
+            return false;
+        }
+
         const isComment = this.isCommentNotification(node);
         const isJira = this.isJiraNotification(node);
         const isBitbucket = this.isBitbucketNotification(node);
