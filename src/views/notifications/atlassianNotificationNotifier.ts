@@ -1,9 +1,16 @@
+import { Uri } from 'vscode';
+
 import { AuthInfo, ProductBitbucket, ProductJira } from '../../atlclients/authInfo';
 import { graphqlRequest } from '../../atlclients/graphql/graphqlClient';
 import { notificationFeedVSCode, unseenNotificationCountVSCode } from '../../atlclients/graphql/graphqlDocuments';
 import { Container } from '../../container';
 import { Logger } from '../../logger';
-import { AtlasCodeNotification, NotificationManagerImpl, NotificationNotifier } from './notificationManager';
+import {
+    AtlasCodeNotification,
+    NotificationManagerImpl,
+    NotificationNotifier,
+    NotificationType,
+} from './notificationManager';
 
 export class AtlassianNotificationNotifier implements NotificationNotifier {
     private static instance: AtlassianNotificationNotifier;
@@ -81,11 +88,15 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
             Logger.warn(`Unsupported notification type for URL: ${node.headNotification.content.url}`);
             return undefined;
         }
+
+        // Strip query parameters from the URL before creating the Uri
+        const url = node.headNotification.content.url.split('?')[0];
+
         return {
             id: node.headNotification.notificationId,
-            uri: node.headNotification.content.url,
+            uri: Uri.parse(url),
             message: node.headNotification.content.message,
-            notificationType: node.headNotification.content.type,
+            notificationType: NotificationType.NewCommentOnJira, // bwieger, this needs to be touched up
             product: product,
             credentialId: authInfo.user.id, // bwieger, check this
         };

@@ -4,7 +4,6 @@ import { notificationChangeEvent } from '../../analytics';
 import { AnalyticsClient } from '../../analytics-node-client/src/client.min';
 import { Container } from '../../container';
 import {
-    NotificationAction,
     NotificationChangeEvent,
     NotificationDelegate,
     NotificationManagerImpl,
@@ -42,46 +41,27 @@ export class BadgeDelegate implements FileDecorationProvider, NotificationDelega
     }
 
     public onNotificationChange(event: NotificationChangeEvent): void {
-        this.updateOverallCount(event);
-
-        const uniqueUris = new Set<Uri>();
-        event.notifications.forEach((notification) => {
-            const uri = notification.uri;
-            if (uri) {
-                uniqueUris.add(uri);
-            }
-        });
-        uniqueUris.forEach((uri) => {
-            this._onDidChangeFileDecorations.fire(uri);
-        });
+        this._onDidChangeFileDecorations.fire(undefined);
     }
 
     private _onDidChangeFileDecorations = new EventEmitter<undefined | Uri | Uri[]>();
 
     public readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
 
-    private updateOverallCount(event: NotificationChangeEvent) {
-        switch (event.action) {
-            case NotificationAction.Removed:
-                this.overallCount -= event.notifications.size;
-                break;
-            case NotificationAction.Added:
-                this.overallCount += event.notifications.size;
-                break;
-            default:
-                return;
-        }
+    private updateOverallCount(oldBadgeValue: number, newBadgeValue: number): void {
+        this.overallCount += newBadgeValue - oldBadgeValue;
+
         this.setExtensionBadge();
     }
 
     public provideFileDecoration(uri: Uri, token: CancellationToken) {
-        const oldBadgeValue = this.badgesRegistration[uri.toString()];
+        const oldBadgeValue = this.badgesRegistration[uri.toString()] || 0;
         const newBadgeValue = NotificationManagerImpl.getInstance().getNotificationsByUri(
             uri,
             NotificationSurface.Badge,
         ).size;
         this.registerBadgeValueByUri(newBadgeValue, uri);
-
+        this.updateOverallCount(oldBadgeValue, newBadgeValue);
         this.analytics(uri, newBadgeValue, oldBadgeValue);
         return this.constructItemBadge(newBadgeValue);
     }

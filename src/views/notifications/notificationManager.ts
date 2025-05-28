@@ -56,7 +56,7 @@ export enum NotificationAction {
     Removed = 'Removed',
 }
 
-const ENABLE_BADGE_FOR = [NotificationType.LoginNeeded];
+const ENABLE_BADGE_FOR = [NotificationType.NewCommentOnJira, NotificationType.LoginNeeded];
 
 const ENABLE_BANNER_FOR = [
     NotificationType.AssignedToYou,
