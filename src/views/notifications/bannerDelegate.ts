@@ -95,10 +95,21 @@ export class BannerDelegate implements NotificationDelegate {
 
     private makeAction(notification: AtlasCodeNotification): { text: string; action: () => void } {
         switch (notification.notificationType) {
-            case NotificationType.NewCommentOnJira:
+            case NotificationType.JiraComment:
                 return {
-                    text: 'Reply',
-                    action: () => {},
+                    text: 'View Jira Issue',
+                    action: () => {
+                        commands.executeCommand(Commands.ShowIssueForURL, notification.uri.toString());
+                    },
+                };
+            case NotificationType.PRComment:
+                return {
+                    text: 'View Pull Request',
+                    action: () => {
+                        commands.executeCommand(Commands.BitbucketOpenPullRequest, {
+                            pullRequestUrl: notification.uri.toString(),
+                        });
+                    },
                 };
             case NotificationType.AssignedToYou:
                 return {

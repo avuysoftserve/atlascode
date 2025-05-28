@@ -32,16 +32,14 @@ export interface NotificationNotifier {
 
 export enum NotificationType {
     AssignedToYou = 'AssignedToYou',
-    NewCommentOnJira = 'NewCommentOnJira',
-    PRNewComment = 'NewCommentOnPR',
+    JiraComment = 'JiraComment',
+    PRComment = 'PRComment',
     PRApproved = 'PRApproved',
     PRChangeRequired = 'PRChangeRequired',
     PRReviewRequested = 'PRReviewRequested',
     PipelineFailure = 'PipelineFailure',
     PipelineSuccess = 'PipelineSuccess',
-    MentionedInComment = 'MentionedInComment',
     LoginNeeded = 'LoginNeeded',
-    NewFeatureAnnouncement = 'NewFeatureAnnouncement',
     Other = 'Other',
 }
 
@@ -56,19 +54,17 @@ export enum NotificationAction {
     Removed = 'Removed',
 }
 
-const ENABLE_BADGE_FOR = [NotificationType.NewCommentOnJira, NotificationType.LoginNeeded];
+const ENABLE_BADGE_FOR = [NotificationType.PRComment, NotificationType.JiraComment, NotificationType.LoginNeeded];
 
 const ENABLE_BANNER_FOR = [
     NotificationType.AssignedToYou,
-    NotificationType.NewCommentOnJira,
-    NotificationType.PRNewComment,
+    NotificationType.JiraComment,
+    NotificationType.PRComment,
     NotificationType.PRApproved,
     NotificationType.PRChangeRequired,
     NotificationType.PRReviewRequested,
     NotificationType.PipelineFailure,
     NotificationType.PipelineSuccess,
-    NotificationType.MentionedInComment,
-    NotificationType.NewFeatureAnnouncement,
     NotificationType.LoginNeeded,
     NotificationType.Other,
 ];

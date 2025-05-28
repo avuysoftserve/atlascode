@@ -88,6 +88,7 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
             Logger.warn(`Unsupported notification type for URL: ${node.headNotification.content.url}`);
             return undefined;
         }
+        const notificationType = product === ProductJira ? NotificationType.JiraComment : NotificationType.PRComment;
 
         // Strip query parameters from the URL before creating the Uri
         const url = node.headNotification.content.url.split('?')[0];
@@ -96,7 +97,7 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
             id: node.headNotification.notificationId,
             uri: Uri.parse(url),
             message: node.headNotification.content.message,
-            notificationType: NotificationType.NewCommentOnJira, // bwieger, this needs to be touched up
+            notificationType: notificationType,
             product: product,
             credentialId: authInfo.user.id, // bwieger, check this
         };

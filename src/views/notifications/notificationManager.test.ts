@@ -155,7 +155,7 @@ describe('NotificationManagerImpl', () => {
         const notification2: AtlasCodeNotification = {
             id: '2',
             message: 'Test Notification 2',
-            notificationType: NotificationType.NewCommentOnJira,
+            notificationType: NotificationType.JiraComment,
             uri: uri,
             product: ProductJira,
         };
