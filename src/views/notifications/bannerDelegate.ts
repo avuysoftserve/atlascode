@@ -37,8 +37,12 @@ export class BannerDelegate implements NotificationDelegate {
     }
 
     public onNotificationChange(event: NotificationChangeEvent): void {
-        if (event.action === NotificationAction.Removed) {
-            return;
+        switch (event.action) {
+            case NotificationAction.Removed:
+            case NotificationAction.MarkedAsRead:
+                return;
+            default:
+                break;
         }
 
         // Adds to the "pile of notifications" for the given URI.

@@ -61,6 +61,7 @@ export class AuthNotifier implements NotificationNotifier, Disposable {
                 notificationType: NotificationType.LoginNeeded,
                 message: message,
                 product: product,
+                timestamp: Date.now(),
             });
             return;
         }

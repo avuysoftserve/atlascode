@@ -95,6 +95,7 @@ describe('NotificationManagerImpl', () => {
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         });
 
         expect(mockDelegate.onNotificationChange).toHaveBeenCalledTimes(1);
@@ -107,6 +108,7 @@ describe('NotificationManagerImpl', () => {
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         });
         expect(mockDelegate.onNotificationChange).toHaveBeenCalledTimes(1);
     });
@@ -119,6 +121,7 @@ describe('NotificationManagerImpl', () => {
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         };
 
         notificationManager.addNotification(notification);
@@ -135,6 +138,7 @@ describe('NotificationManagerImpl', () => {
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         };
 
         notificationManager.addNotification(notification);
@@ -151,6 +155,7 @@ describe('NotificationManagerImpl', () => {
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         };
         const notification2: AtlasCodeNotification = {
             id: '2',
@@ -158,6 +163,7 @@ describe('NotificationManagerImpl', () => {
             notificationType: NotificationType.JiraComment,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         };
 
         notificationManager.addNotification(notification1);
@@ -175,6 +181,7 @@ describe('NotificationManagerImpl', () => {
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         };
         const badgeAndBannerNotification: AtlasCodeNotification = {
             id: '2',
@@ -182,6 +189,7 @@ describe('NotificationManagerImpl', () => {
             notificationType: NotificationType.LoginNeeded,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         };
 
         notificationManager.addNotification(bannerOnlyNotification);

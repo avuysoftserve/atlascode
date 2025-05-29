@@ -15,6 +15,7 @@ export interface AtlasCodeNotification {
     notificationType: NotificationType;
     product: Product;
     credentialId?: string;
+    timestamp: number;
 }
 export interface NotificationDelegate {
     onNotificationChange(event: NotificationChangeEvent): void;
@@ -52,6 +53,7 @@ export enum NotificationSurface {
 export enum NotificationAction {
     Added = 'Added',
     Removed = 'Removed',
+    MarkedAsRead = 'MarkedAsRead',
 }
 
 const ENABLE_BADGE_FOR = [NotificationType.PRComment, NotificationType.JiraComment, NotificationType.LoginNeeded];
@@ -77,6 +79,8 @@ export class NotificationManagerImpl {
     private _jiraEnabled: boolean;
     private _bitbucketEnabled: boolean;
     private _disposable: Disposable[] = [];
+    private userReadNotifications: { id: string; timestamp: number }[] = [];
+    private static readonly USER_READ_NOTIFICATIONS_KEY = 'userReadNotifications';
 
     private constructor() {
         this._disposable.push(Disposable.from(Container.credentialManager.onDidAuthChange(this.onDidAuthChange, this)));
@@ -84,6 +88,11 @@ export class NotificationManagerImpl {
         this._disposable.push(Disposable.from(window.onDidChangeWindowState(this.runNotifiers, this)));
         this._jiraEnabled = Container.config.jira.enabled;
         this._bitbucketEnabled = Container.config.bitbucket.enabled;
+        this.userReadNotifications =
+            Container.context.globalState.get<{ id: string; timestamp: number }[]>(
+                NotificationManagerImpl.USER_READ_NOTIFICATIONS_KEY,
+                [],
+            ) || [];
     }
 
     public onDidAuthChange(e: AuthInfoEvent): void {
@@ -149,6 +158,10 @@ export class NotificationManagerImpl {
 
     public addNotification(notification: AtlasCodeNotification): void {
         const uri = notification.uri;
+        if (this.userReadNotifications.some((n) => n.id === notification.id)) {
+            Logger.debug(`Notification with id ${notification.id} has already been read by the user`);
+            return;
+        }
         Logger.debug(`Adding notification with id ${notification.id} for uri ${uri}`);
         if (!this.notifications.has(uri.toString())) {
             Logger.debug(`No notifications found for uri ${uri}, creating new map`);
@@ -169,7 +182,7 @@ export class NotificationManagerImpl {
         Logger.debug(`Clearing notifications for uri ${uri}`);
         const removedNotifications = this.notifications.get(uri.toString());
         this.notifications.delete(uri.toString());
-        this.onNotificationChange(NotificationAction.Removed, removedNotifications);
+        this.onNotificationChange(NotificationAction.MarkedAsRead, removedNotifications);
     }
 
     private clearNotificationsByProduct(product: Product): void {
@@ -207,6 +220,8 @@ export class NotificationManagerImpl {
         action: NotificationAction,
         notifications: Map<string, AtlasCodeNotification> | undefined,
     ): void {
+        // Store in the VS Code global state the notificationIDs that have been removed
+        this.storeRemovedNotificationIds(action, notifications);
         notifications = notifications || new Map();
         this.delegates.forEach((delegate) => {
             const filteredNotifications = this.filterNotificationsBySurface(notifications, delegate.getSurface());
@@ -221,6 +236,36 @@ export class NotificationManagerImpl {
             delegate.onNotificationChange(notificationChangeEvent);
             Logger.debug(`Delegate ${delegate} notified`);
         });
+    }
+
+    private storeRemovedNotificationIds(
+        action: NotificationAction,
+        notifications: Map<string, AtlasCodeNotification> | undefined,
+    ): void {
+        if (action !== NotificationAction.MarkedAsRead || !notifications || notifications.size === 0) {
+            return;
+        }
+
+        const newUserReadNotifications = Array.from(notifications.values()).map((n) => ({
+            id: n.id,
+            timestamp: n.timestamp,
+        }));
+
+        if (newUserReadNotifications.length > 0) {
+            // Store the removed notification IDs and timestamps in the global state
+            const existingEntries = (
+                Container.context.globalState.get<{ id: string; timestamp: number }[]>(
+                    NotificationManagerImpl.USER_READ_NOTIFICATIONS_KEY,
+                    [],
+                ) || []
+            ).filter((entry) => {
+                // Filter out entries that are older than 30 days
+                return Date.now() - entry.timestamp < 30 * 24 * 60 * 60 * 1000;
+            });
+            const updatedEntries = [...existingEntries, ...newUserReadNotifications];
+            this.userReadNotifications = updatedEntries;
+            Container.context.globalState.update(NotificationManagerImpl.USER_READ_NOTIFICATIONS_KEY, updatedEntries);
+        }
     }
 
     private getBadgeNotifications(

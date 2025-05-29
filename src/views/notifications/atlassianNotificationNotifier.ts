@@ -100,6 +100,7 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
             notificationType: notificationType,
             product: product,
             credentialId: authInfo.user.id, // bwieger, check this
+            timestamp: new Date(node.headNotification.timestamp).valueOf(),
         };
     }
 

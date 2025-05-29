@@ -89,6 +89,7 @@ describe('BadgeDelegate', () => {
             notificationType: NotificationType.LoginNeeded,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         };
         const notification2: AtlasCodeNotification = {
             id: 'notification2',
@@ -96,6 +97,7 @@ describe('BadgeDelegate', () => {
             notificationType: NotificationType.LoginNeeded,
             uri: uri,
             product: ProductJira,
+            timestamp: Date.now(),
         };
 
         // Case 1: 0 notifications
