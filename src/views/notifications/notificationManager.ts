@@ -175,7 +175,7 @@ export class NotificationManagerImpl {
 
     public clearNotificationsByUri(uri: Uri): void {
         Logger.debug(`Clearing notifications for uri ${uri}`);
-        const removedNotifications = this.notifications.get(uri.toString());
+        const removedNotifications = this.notifications.get(uri.toString()) || new Map();
         this.notifications.delete(uri.toString());
         this.onNotificationChange(NotificationAction.MarkedAsRead, removedNotifications);
     }
@@ -211,10 +211,7 @@ export class NotificationManagerImpl {
         this.onNotificationChange(NotificationAction.Removed, removedNotifications);
     }
 
-    private onNotificationChange(
-        action: NotificationAction,
-        notifications: Map<string, AtlasCodeNotification> | undefined,
-    ): void {
+    private onNotificationChange(action: NotificationAction, notifications: Map<string, AtlasCodeNotification>): void {
         // Store in the VS Code global state the notificationIDs that have been removed
         this.storeRemovedNotificationIds(action, notifications);
         notifications = notifications || new Map();
@@ -235,13 +232,16 @@ export class NotificationManagerImpl {
 
     private storeRemovedNotificationIds(
         action: NotificationAction,
-        notifications: Map<string, AtlasCodeNotification> | undefined,
+        notifications: Map<string, AtlasCodeNotification>,
     ): void {
-        if (action !== NotificationAction.MarkedAsRead || !notifications || notifications.size === 0) {
+        const notificationsToStore = Array.from(notifications.values()).filter(
+            (n) => n.notificationType !== NotificationType.LoginNeeded,
+        );
+        if (action !== NotificationAction.MarkedAsRead || notificationsToStore.length === 0) {
             return;
         }
 
-        const newUserReadNotifications = Array.from(notifications.values()).map((n) => ({
+        const newUserReadNotifications = notificationsToStore.map((n) => ({
             id: n.id,
             timestamp: n.timestamp,
         }));

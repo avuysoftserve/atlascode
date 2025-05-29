@@ -101,14 +101,14 @@ export class BannerDelegate implements NotificationDelegate {
         switch (notification.notificationType) {
             case NotificationType.JiraComment:
                 return {
-                    text: 'View Jira Issue',
+                    text: 'View Jira Issue', // View AXON-123
                     action: () => {
                         commands.executeCommand(Commands.ShowIssueForURL, notification.uri.toString());
                     },
                 };
             case NotificationType.PRComment:
                 return {
-                    text: 'View Pull Request',
+                    text: 'View Pull Request', // View PR 123
                     action: () => {
                         commands.executeCommand(Commands.BitbucketOpenPullRequest, {
                             pullRequestUrl: notification.uri.toString(),
