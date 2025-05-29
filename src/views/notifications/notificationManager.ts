@@ -80,7 +80,6 @@ export class NotificationManagerImpl {
     private _bitbucketEnabled: boolean;
     private _disposable: Disposable[] = [];
     private userReadNotifications: { id: string; timestamp: number }[] = [];
-    private static readonly USER_READ_NOTIFICATIONS_KEY = 'userReadNotifications';
 
     private constructor() {
         this._disposable.push(Disposable.from(Container.credentialManager.onDidAuthChange(this.onDidAuthChange, this)));
@@ -88,11 +87,7 @@ export class NotificationManagerImpl {
         this._disposable.push(Disposable.from(window.onDidChangeWindowState(this.runNotifiers, this)));
         this._jiraEnabled = Container.config.jira.enabled;
         this._bitbucketEnabled = Container.config.bitbucket.enabled;
-        this.userReadNotifications =
-            Container.context.globalState.get<{ id: string; timestamp: number }[]>(
-                NotificationManagerImpl.USER_READ_NOTIFICATIONS_KEY,
-                [],
-            ) || [];
+        this.userReadNotifications = NotificationDB.getReadNotifications();
     }
 
     public onDidAuthChange(e: AuthInfoEvent): void {
@@ -251,21 +246,11 @@ export class NotificationManagerImpl {
             timestamp: n.timestamp,
         }));
 
-        if (newUserReadNotifications.length > 0) {
-            // Store the removed notification IDs and timestamps in the global state
-            const existingEntries = (
-                Container.context.globalState.get<{ id: string; timestamp: number }[]>(
-                    NotificationManagerImpl.USER_READ_NOTIFICATIONS_KEY,
-                    [],
-                ) || []
-            ).filter((entry) => {
-                // Filter out entries that are older than 30 days
-                return Date.now() - entry.timestamp < 30 * 24 * 60 * 60 * 1000;
-            });
-            const updatedEntries = [...existingEntries, ...newUserReadNotifications];
-            this.userReadNotifications = updatedEntries;
-            Container.context.globalState.update(NotificationManagerImpl.USER_READ_NOTIFICATIONS_KEY, updatedEntries);
-        }
+        // Store the removed notification IDs and timestamps in the global state
+        const existingEntries = NotificationDB.getReadNotifications();
+        const updatedEntries = [...existingEntries, ...newUserReadNotifications];
+        this.userReadNotifications = updatedEntries;
+        NotificationDB.setReadNotifications(updatedEntries);
     }
 
     private getBadgeNotifications(
@@ -349,5 +334,25 @@ export class NotificationManagerImpl {
             Logger.debug('Bitbucket notifications disabled');
             this.clearNotificationsByProduct(ProductBitbucket);
         }
+    }
+}
+
+class NotificationDB {
+    private static readonly USER_READ_NOTIFICATIONS_KEY = 'userReadNotifications';
+    public static getReadNotifications(): { id: string; timestamp: number }[] {
+        const inDB = Container.context.globalState.get<{ id: string; timestamp: number }[]>(
+            NotificationDB.USER_READ_NOTIFICATIONS_KEY,
+            [],
+        );
+
+        return inDB.filter((notification) => NotificationDB.isGoodTTL(notification));
+    }
+
+    public static setReadNotifications(notifications: { id: string; timestamp: number }[]): void {
+        Container.context.globalState.update(NotificationDB.USER_READ_NOTIFICATIONS_KEY, notifications);
+    }
+
+    private static isGoodTTL(notification: { id: string; timestamp: number }): boolean {
+        return Date.now() - notification.timestamp < 8 * 24 * 60 * 60 * 1000; // 8 days
     }
 }
