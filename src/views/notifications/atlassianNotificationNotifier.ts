@@ -103,12 +103,56 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
         return {
             id: node.headNotification.notificationId,
             uri: Uri.parse(url),
-            message: node.headNotification.content.message,
+            message: this.makeMessage(node),
             notificationType: notificationType,
             product: product,
-            userId: authInfo.user.id, // bwieger, check this
+            userId: authInfo.user.id,
             timestamp: new Date(node.headNotification.timestamp).valueOf(),
         };
+    }
+
+    private makeMessage(node: any): string {
+        const bodyMessage = this.processBodyItems(node);
+        let message = node.headNotification.content.message + (bodyMessage ? `: ${bodyMessage}` : '');
+        // if message is too long, truncate it and add ellipsis
+        if (message.length > 200) {
+            message = message.substring(0, 200 - 3) + '...';
+        }
+        return message;
+    }
+
+    private processBodyItems(node: any): string {
+        if (node.headNotification.content.bodyItems && node.headNotification.content.bodyItems.length > 0) {
+            const bodyItem = node.headNotification.content.bodyItems[0];
+            if (bodyItem.document && bodyItem.document.format === 'ADF') {
+                try {
+                    const adfData = JSON.parse(bodyItem.document.data);
+                    if (adfData.content && adfData.content.length > 0) {
+                        return adfData.content
+                            .map((item: any) => {
+                                if (item.content) {
+                                    return item.content
+                                        .map((contentItem: any) => {
+                                            if (contentItem.type === 'text') {
+                                                return contentItem.text;
+                                            } else if (contentItem.attrs) {
+                                                return contentItem.attrs.text || '';
+                                            }
+                                            return '';
+                                        })
+                                        .join(' ');
+                                }
+                                return '';
+                            })
+                            .join(' ')
+                            .trim();
+                    }
+                } catch (error) {
+                    Logger.error(new Error(`Error parsing ADF data: ${error}`));
+                }
+            }
+        }
+        return '';
     }
 
     private isJiraNotification(node: any): boolean {
