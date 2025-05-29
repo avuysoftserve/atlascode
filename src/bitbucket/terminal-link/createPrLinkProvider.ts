@@ -149,6 +149,6 @@ export class BitbucketCloudPullRequestLinkProvider extends Disposable implements
     }
 
     private disable() {
-        configuration.updateEffective('bitbucket.showTerminalLinkPanel', false);
+        configuration.updateEffective('bitbucket.showTerminalLinkPanel', false, null, true);
     }
 }

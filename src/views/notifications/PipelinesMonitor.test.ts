@@ -222,7 +222,12 @@ describe('PipelinesMonitor', () => {
             await monitor.checkForNewActivity();
 
             // Should have updated the configuration
-            expect(configuration.updateEffective).toHaveBeenCalledWith('jira.explorer.monitorEnabled', false);
+            expect(configuration.updateEffective).toHaveBeenCalledWith(
+                'bitbucket.pipelines.monitorEnabled',
+                false,
+                null,
+                true,
+            );
         });
     });
 

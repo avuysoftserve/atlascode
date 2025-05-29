@@ -49,7 +49,7 @@ export class PipelinesMonitor implements BitbucketActivityMonitor {
                                     commands.executeCommand('workbench.view.extension.atlascode-drawer');
                                 }
                             } else if (selection === neverShow) {
-                                configuration.updateEffective('jira.explorer.monitorEnabled', false);
+                                configuration.updateEffective('bitbucket.pipelines.monitorEnabled', false, null, true);
                             }
                         });
                 }

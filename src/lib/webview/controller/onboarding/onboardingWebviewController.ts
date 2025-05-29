@@ -52,7 +52,7 @@ export class OnboardingWebviewController implements WebviewController<Onboarding
 
     public async onShown(panel: WebviewPanel): Promise<void> {
         try {
-            await configuration.updateEffective('jira.enabled', undefined);
+            await configuration.updateEffective('jira.enabled', undefined, null, true);
         } catch {}
 
         // focus the atlassian extension panels when the onboarding view shows...

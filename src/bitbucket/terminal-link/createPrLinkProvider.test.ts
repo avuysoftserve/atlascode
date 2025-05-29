@@ -170,7 +170,7 @@ describe('BitbucketPullRequestLinkProvider', () => {
 
             expect(executeCommandSpy).not.toHaveBeenCalledWith('bitbucket.createPullRequest');
             expect(env.openExternal).toHaveBeenCalledWith(mockUri);
-            expect(configSpy).toHaveBeenCalledWith('bitbucket.showTerminalLinkPanel', false);
+            expect(configSpy).toHaveBeenCalledWith('bitbucket.showTerminalLinkPanel', false, null, true);
         });
     });
 });
