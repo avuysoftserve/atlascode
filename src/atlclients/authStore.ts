@@ -360,7 +360,9 @@ export class CredentialManager implements Disposable {
         const productAuths = this._memStore.get(site.product.key);
         let wasKeyDeleted = false;
         let wasMemDeleted = false;
+        let userId = '';
         if (productAuths) {
+            userId = productAuths.get(site.credentialId)?.user.id || '';
             wasMemDeleted = productAuths.delete(site.credentialId);
             this._memStore.set(site.product.key, productAuths);
         }
@@ -378,6 +380,7 @@ export class CredentialManager implements Disposable {
                 type: AuthChangeType.Remove,
                 product: site.product,
                 credentialId: site.credentialId,
+                userId: userId,
             };
             this._onDidAuthChange.fire(removeEvent);
 

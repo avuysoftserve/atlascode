@@ -1,6 +1,6 @@
-import { Uri } from 'vscode';
+import { Disposable, Uri } from 'vscode';
 
-import { AuthInfo, ProductBitbucket, ProductJira } from '../../atlclients/authInfo';
+import { AuthInfo, AuthInfoEvent, isRemoveAuthEvent, ProductBitbucket, ProductJira } from '../../atlclients/authInfo';
 import { graphqlRequest } from '../../atlclients/graphql/graphqlClient';
 import { notificationFeedVSCode, unseenNotificationCountVSCode } from '../../atlclients/graphql/graphqlDocuments';
 import { Container } from '../../container';
@@ -12,12 +12,13 @@ import {
     NotificationType,
 } from './notificationManager';
 
-export class AtlassianNotificationNotifier implements NotificationNotifier {
+export class AtlassianNotificationNotifier implements NotificationNotifier, Disposable {
     private static instance: AtlassianNotificationNotifier;
 
     private _lastUnseenNotificationCount: Record<string, number> = {};
     private _lastPull: Record<string, number> = {};
     private static readonly NOTIFICATION_INTERVAL_MS = 60 * 1000; // 1 minute
+    private _disposable: Disposable[] = [];
 
     public static getInstance(): AtlassianNotificationNotifier {
         if (!AtlassianNotificationNotifier.instance) {
@@ -25,7 +26,13 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
         }
         return AtlassianNotificationNotifier.instance;
     }
-    private constructor() {}
+    private constructor() {
+        this._disposable.push(Disposable.from(Container.credentialManager.onDidAuthChange(this.onDidAuthChange, this)));
+    }
+
+    public dispose() {
+        this._disposable.forEach((e) => e.dispose());
+    }
 
     public fetchNotifications(): void {
         Container.credentialManager.getAllValidAuthInfo(ProductJira).then((authInfos: AuthInfo[]) => {
@@ -99,7 +106,7 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
             message: node.headNotification.content.message,
             notificationType: notificationType,
             product: product,
-            credentialId: authInfo.user.id, // bwieger, check this
+            userId: authInfo.user.id, // bwieger, check this
             timestamp: new Date(node.headNotification.timestamp).valueOf(),
         };
     }
@@ -166,5 +173,12 @@ export class AtlassianNotificationNotifier implements NotificationNotifier {
                 Logger.error(new Error(`Error fetching unseen notification count: ${error}`));
                 return 0;
             });
+    }
+
+    private onDidAuthChange(e: AuthInfoEvent): void {
+        if (isRemoveAuthEvent(e)) {
+            this._lastUnseenNotificationCount[e.userId] = 0;
+            return;
+        }
     }
 }

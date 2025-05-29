@@ -14,7 +14,7 @@ export interface AtlasCodeNotification {
     message: string;
     notificationType: NotificationType;
     product: Product;
-    credentialId?: string;
+    userId?: string;
     timestamp: number;
 }
 export interface NotificationDelegate {
@@ -70,7 +70,7 @@ const ENABLE_BANNER_FOR = [
     NotificationType.LoginNeeded,
     NotificationType.Other,
 ];
-export class NotificationManagerImpl {
+export class NotificationManagerImpl implements Disposable {
     private notifications: Map<string, Map<string, AtlasCodeNotification>> = new Map();
     private static instance: NotificationManagerImpl;
     private delegates: Set<NotificationDelegate> = new Set();
@@ -92,9 +92,13 @@ export class NotificationManagerImpl {
 
     public onDidAuthChange(e: AuthInfoEvent): void {
         if (isRemoveAuthEvent(e)) {
-            this.clearNotificationsByCredentialId(e.credentialId);
+            this.clearNotificationsByUserId(e.userId);
             return;
         }
+    }
+
+    public dispose() {
+        this._disposable.forEach((e) => e.dispose());
     }
 
     public static getInstance(): NotificationManagerImpl {
@@ -197,12 +201,12 @@ export class NotificationManagerImpl {
         this.onNotificationChange(NotificationAction.Removed, removedNotifications);
     }
 
-    private clearNotificationsByCredentialId(credentialId: string): void {
-        Logger.debug(`Clearing notifications for credentialId ${credentialId}`);
+    private clearNotificationsByUserId(userId: string): void {
+        Logger.debug(`Clearing notifications for userId ${userId}`);
         const removedNotifications = new Map<string, AtlasCodeNotification>();
         this.notifications.forEach((notificationsForUri) => {
             notificationsForUri.forEach((notification) => {
-                if (notification.credentialId === credentialId) {
+                if (notification.userId === userId) {
                     removedNotifications.set(notification.id, notification);
                     notificationsForUri.delete(notification.id);
                 }
