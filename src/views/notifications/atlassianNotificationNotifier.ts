@@ -122,37 +122,49 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
     }
 
     private processBodyItems(node: any): string {
-        if (node.headNotification.content.bodyItems && node.headNotification.content.bodyItems.length > 0) {
-            const bodyItem = node.headNotification.content.bodyItems[0];
-            if (bodyItem.document && bodyItem.document.format === 'ADF') {
-                try {
-                    const adfData = JSON.parse(bodyItem.document.data);
-                    if (adfData.content && adfData.content.length > 0) {
-                        return adfData.content
-                            .map((item: any) => {
-                                if (item.content) {
-                                    return item.content
-                                        .map((contentItem: any) => {
-                                            if (contentItem.type === 'text') {
-                                                return contentItem.text;
-                                            } else if (contentItem.attrs) {
-                                                return contentItem.attrs.text || '';
-                                            }
-                                            return '';
-                                        })
-                                        .join(' ');
-                                }
-                                return '';
-                            })
-                            .join(' ')
-                            .trim();
-                    }
-                } catch (error) {
-                    Logger.error(new Error(`Error parsing ADF data: ${error}`));
-                }
-            }
+        const bodyItems = node.headNotification.content.bodyItems;
+        if (!bodyItems || bodyItems.length === 0) {
+            return '';
         }
-        return '';
+
+        const bodyItem = bodyItems[0];
+        if (!bodyItem.document || bodyItem.document.format !== 'ADF') {
+            return '';
+        }
+
+        let adfData: any;
+        try {
+            adfData = JSON.parse(bodyItem.document.data);
+        } catch (error) {
+            Logger.error(new Error(`Error parsing ADF data: ${error}`));
+            return '';
+        }
+
+        return this.extractTextFromAdf(adfData).trim();
+    }
+
+    private extractTextFromAdf(adfData: any): string {
+        if (!adfData?.content || !Array.isArray(adfData.content)) {
+            return '';
+        }
+        return adfData.content.map((item: any) => this.extractTextFromAdfItem(item)).join(' ');
+    }
+
+    private extractTextFromAdfItem(item: any): string {
+        if (!item?.content || !Array.isArray(item.content)) {
+            return '';
+        }
+        return item.content
+            .map((contentItem: any) => {
+                if (contentItem.type === 'text') {
+                    return contentItem.text || '';
+                }
+                if (contentItem.attrs && contentItem.attrs.text) {
+                    return contentItem.attrs.text;
+                }
+                return '';
+            })
+            .join(' ');
     }
 
     private isJiraNotification(node: any): boolean {
