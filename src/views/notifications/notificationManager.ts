@@ -1,3 +1,4 @@
+import { FeatureFlagClient, Features } from 'src/util/featureFlags';
 import { ConfigurationChangeEvent, Disposable, Uri, window } from 'vscode';
 
 import { AuthInfoEvent, isRemoveAuthEvent, Product, ProductBitbucket, ProductJira } from '../../atlclients/authInfo';
@@ -106,7 +107,9 @@ export class NotificationManagerImpl implements Disposable {
             NotificationManagerImpl.instance = new NotificationManagerImpl();
 
             NotificationManagerImpl.instance.notifiers.add(AuthNotifier.getInstance());
-            NotificationManagerImpl.instance.notifiers.add(AtlassianNotificationNotifier.getInstance());
+            if (FeatureFlagClient.checkGate(Features.AtlassianNotifications)) {
+                NotificationManagerImpl.instance.notifiers.add(AtlassianNotificationNotifier.getInstance());
+            }
 
             // Note: the badge delegate is not registered here as it needs the context of the tree view
             NotificationManagerImpl.instance.registerDelegate(BannerDelegate.getInstance());
