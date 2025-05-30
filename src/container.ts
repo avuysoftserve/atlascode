@@ -27,6 +27,7 @@ import { SectionChangeMessage } from './lib/ipc/toUI/config';
 import { StartWorkIssueMessage } from './lib/ipc/toUI/startWork';
 import { CommonActionMessageHandler } from './lib/webview/controller/common/commonActionMessageHandler';
 import { Logger } from './logger';
+import OnboardingProvider from './onboarding/onboardingProvider';
 import { Pipeline } from './pipelines/model';
 import { SiteManager } from './siteManager';
 import { AtlascodeUriHandler, ONBOARDING_URL, SETTINGS_URL } from './uriHandler';
@@ -195,6 +196,8 @@ export class Container {
         SearchJiraHelper.initialize();
         context.subscriptions.push(new CustomJQLViewProvider());
         context.subscriptions.push((this._assignedWorkItemsView = new AssignedWorkItemsViewProvider()));
+
+        this._onboardingProvider = new OnboardingProvider();
     }
 
     static focus() {
@@ -390,5 +393,10 @@ export class Container {
     private static _pmfStats: PmfStats;
     public static get pmfStats() {
         return this._pmfStats;
+    }
+
+    private static _onboardingProvider: OnboardingProvider;
+    public static get onboardingProvider() {
+        return this._onboardingProvider;
     }
 }

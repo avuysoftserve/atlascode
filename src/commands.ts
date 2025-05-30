@@ -92,6 +92,7 @@ export enum Commands {
     ToDoIssue = 'atlascode.jira.todoIssue',
     InProgressIssue = 'atlascode.jira.inProgressIssue',
     DoneIssue = 'atlascode.jira.doneIssue',
+    ShowOnboardingFlow = 'atlascode.showOnboardingFlow',
 }
 
 export function registerCommands(vscodeContext: ExtensionContext) {
@@ -237,5 +238,6 @@ export function registerCommands(vscodeContext: ExtensionContext) {
         commands.registerCommand(Commands.BitbucketOpenPullRequest, (data: { pullRequestUrl: string }) => {
             Container.openPullRequestHandler(data.pullRequestUrl);
         }),
+        commands.registerCommand(Commands.ShowOnboardingFlow, () => Container.onboardingProvider.start()),
     );
 }
