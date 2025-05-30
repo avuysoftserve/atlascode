@@ -1,7 +1,7 @@
 import { CheckoutHelper } from 'src/bitbucket/interfaces';
 import { Uri } from 'vscode';
 
-const extractPullRequestComponents = (url: string): { repoUrl: string; prId: number } => {
+export const extractPullRequestComponents = (url: string): { repoUrl: string; prId: number } => {
     const repoUrl = url.slice(0, url.indexOf('/pull-requests'));
     const prUrlPath = Uri.parse(url).path;
     const prId = prUrlPath.slice(prUrlPath.lastIndexOf('/') + 1);

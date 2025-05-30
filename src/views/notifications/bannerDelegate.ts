@@ -3,6 +3,7 @@ import { commands, Uri, window } from 'vscode';
 import { notificationChangeEvent } from '../../analytics';
 import { AnalyticsClient } from '../../analytics-node-client/src/client.min';
 import { Commands } from '../../commands';
+import { extractPullRequestComponents } from '../../commands/bitbucket/pullRequest';
 import { Container } from '../../container';
 import {
     AtlasCodeNotification,
@@ -19,6 +20,8 @@ export class BannerDelegate implements NotificationDelegate {
     private _analyticsClient: AnalyticsClient;
     private pile: Set<NotificationChangeEvent> = new Set();
     private timer: NodeJS.Timeout | undefined;
+
+    private readonly jiraPathRegex = /\/([A-Z][A-Z0-9]+-\d+)/i; // Matches Jira issue keys like AXON-123
 
     public static getInstance(): BannerDelegate {
         if (!this.bannerDelegateSingleton) {
@@ -100,15 +103,19 @@ export class BannerDelegate implements NotificationDelegate {
     private makeAction(notification: AtlasCodeNotification): { text: string; action: () => void } {
         switch (notification.notificationType) {
             case NotificationType.JiraComment:
+                const issueKey = this.getNotificationSourceKeyFromUri(notification.uri, notification.notificationType);
+
                 return {
-                    text: 'View Jira Issue', // View AXON-123
+                    text: `View ${issueKey || 'Jira Issue'}`, // View AXON-123
                     action: () => {
                         commands.executeCommand(Commands.ShowIssueForURL, notification.uri.toString());
                     },
                 };
             case NotificationType.PRComment:
+                const prKey = this.getNotificationSourceKeyFromUri(notification.uri, notification.notificationType);
+
                 return {
-                    text: 'View Pull Request', // View PR 123
+                    text: `View ${prKey || 'Pull Request'}`, // View PR 123
                     action: () => {
                         commands.executeCommand(Commands.BitbucketOpenPullRequest, {
                             pullRequestUrl: notification.uri.toString(),
@@ -136,5 +143,22 @@ export class BannerDelegate implements NotificationDelegate {
         notificationChangeEvent(uri, NotificationSurface.Banner, count).then((e) => {
             this._analyticsClient.sendTrackEvent(e);
         });
+    }
+
+    private getNotificationSourceKeyFromUri(uri: Uri, notificationType: NotificationType): string | undefined {
+        if (notificationType === NotificationType.JiraComment) {
+            const match = uri.path.match(this.jiraPathRegex);
+            const issueKey = match ? match[1] : undefined;
+
+            return issueKey;
+        }
+
+        if (notificationType === NotificationType.PRComment) {
+            const prId = extractPullRequestComponents(uri.toString()).prId;
+
+            return `PR #${prId}`;
+        }
+
+        return undefined;
     }
 }
