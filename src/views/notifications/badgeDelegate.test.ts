@@ -172,9 +172,9 @@ describe('BadgeDelegate', () => {
             NotificationSurface.Badge,
         );
         expect(decorationUri1).toEqual({
-            badge: '2️⃣',
+            badge: '2',
             tooltip: '2 notifications',
-            color: new ThemeColor('editorForeground'),
+            color: new ThemeColor('activityBarBadge.background'),
             propagate: false,
         });
 
@@ -183,9 +183,9 @@ describe('BadgeDelegate', () => {
             NotificationSurface.Badge,
         );
         expect(decorationUri2).toEqual({
-            badge: '1️⃣',
+            badge: '1',
             tooltip: '1 notification',
-            color: new ThemeColor('editorForeground'),
+            color: new ThemeColor('activityBarBadge.background'),
             propagate: false,
         });
     });

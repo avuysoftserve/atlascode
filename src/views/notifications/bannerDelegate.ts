@@ -1,6 +1,6 @@
 import { commands, Uri, window } from 'vscode';
 
-import { notificationChangeEvent } from '../../analytics';
+import { notificationActionButtonClickedEvent, notificationChangeEvent } from '../../analytics';
 import { AnalyticsClient } from '../../analytics-node-client/src/client.min';
 import { Commands } from '../../commands';
 import { extractPullRequestComponents } from '../../commands/bitbucket/pullRequest';
@@ -93,6 +93,7 @@ export class BannerDelegate implements NotificationDelegate {
             switch (selection) {
                 case yesText:
                     yesAction();
+                    this.analyticsBannerAction(notification.uri, notification.notificationType, yesText);
                     break;
                 default:
                     break;
@@ -142,6 +143,19 @@ export class BannerDelegate implements NotificationDelegate {
     private analyticsBannerShown(uri: Uri, count: number) {
         notificationChangeEvent(uri, NotificationSurface.Banner, count).then((e) => {
             this._analyticsClient.sendTrackEvent(e);
+        });
+    }
+
+    private analyticsBannerAction(uri: Uri, type: NotificationType, action: string) {
+        notificationActionButtonClickedEvent(
+            uri,
+            {
+                surface: NotificationSurface.Banner,
+                type,
+            },
+            action,
+        ).then((e) => {
+            this._analyticsClient.sendUIEvent(e);
         });
     }
 
