@@ -1,10 +1,10 @@
-import { FeatureFlagClient, Features } from 'src/util/featureFlags';
 import { ConfigurationChangeEvent, Disposable, Uri, window } from 'vscode';
 
 import { AuthInfoEvent, isRemoveAuthEvent, Product, ProductBitbucket, ProductJira } from '../../atlclients/authInfo';
 import { configuration } from '../../config/configuration';
 import { Container } from '../../container';
 import { Logger } from '../../logger';
+import { FeatureFlagClient, Features } from '../../util/featureFlags';
 import { AtlassianNotificationNotifier } from './atlassianNotificationNotifier';
 import { AuthNotifier } from './authNotifier';
 import { BannerDelegate } from './bannerDelegate';

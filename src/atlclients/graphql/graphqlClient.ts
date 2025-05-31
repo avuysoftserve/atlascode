@@ -1,6 +1,6 @@
 import { request } from 'graphql-request';
-import { Logger } from 'src/logger';
 
+import { Logger } from '../../logger';
 import { AuthInfo, isOAuthInfo } from '../authInfo';
 
 export async function graphqlRequest<T = any>(

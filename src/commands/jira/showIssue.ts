@@ -6,13 +6,13 @@ import {
     MinimalIssue,
     MinimalIssueOrKeyAndSite,
 } from '@atlassianlabs/jira-pi-common-models';
-import { Logger } from 'src/logger';
 import * as vscode from 'vscode';
 
 import { DetailedSiteInfo, emptySiteInfo, ProductJira } from '../../atlclients/authInfo';
 import { Container } from '../../container';
 import { getCachedOrFetchMinimalIssue } from '../../jira/fetchIssue';
 import { issueForKey } from '../../jira/issueForKey';
+import { Logger } from '../../logger';
 
 export async function showIssue(issueOrKeyAndSite: MinimalIssueOrKeyAndSite<DetailedSiteInfo>) {
     let issue: MinimalIssue<DetailedSiteInfo>;

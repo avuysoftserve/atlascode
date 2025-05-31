@@ -13,6 +13,12 @@ jest.mock('./authNotifier', () => ({
         })),
     },
 }));
+jest.mock('../../util/featureFlags', () => ({
+    Features: {},
+    FeatureFlagClient: {
+        checkGate: jest.fn(() => Promise.resolve(true)),
+    },
+}));
 jest.mock('../../container', () => ({
     Container: {
         analyticsClient: {
@@ -28,6 +34,13 @@ jest.mock('../../container', () => ({
             },
             bitbucket: {
                 enabled: true,
+            },
+        },
+        context: {
+            globalState: {
+                // should return an empty list
+                get: jest.fn(() => []),
+                update: jest.fn(),
             },
         },
     },
@@ -90,7 +103,7 @@ describe('NotificationManagerImpl', () => {
         notificationManager.registerDelegate(mockDelegate);
         const uri = Uri.parse(generateRandomFileUri());
         notificationManager.addNotification({
-            id: '1',
+            id: generateRandomString(),
             message: 'Test Notification',
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
@@ -103,7 +116,7 @@ describe('NotificationManagerImpl', () => {
         notificationManager.unregisterDelegate(mockDelegate);
 
         notificationManager.addNotification({
-            id: '2',
+            id: generateRandomString(),
             message: 'Another Test Notification',
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
@@ -116,7 +129,7 @@ describe('NotificationManagerImpl', () => {
     it('should add and retrieve notifications by URI', () => {
         const uri = Uri.parse(generateRandomFileUri());
         const notification: AtlasCodeNotification = {
-            id: '1',
+            id: generateRandomString(),
             message: 'Test Notification',
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
@@ -133,7 +146,7 @@ describe('NotificationManagerImpl', () => {
     it('should not add duplicate notifications', () => {
         const uri = Uri.parse(generateRandomFileUri());
         const notification: AtlasCodeNotification = {
-            id: '1',
+            id: generateRandomString(),
             message: 'Test Notification',
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
@@ -150,7 +163,7 @@ describe('NotificationManagerImpl', () => {
     it('should clear all notifications for a URI', () => {
         const uri = Uri.parse(generateRandomFileUri());
         const notification1: AtlasCodeNotification = {
-            id: '1',
+            id: generateRandomString(),
             message: 'Test Notification 1',
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
@@ -158,7 +171,7 @@ describe('NotificationManagerImpl', () => {
             timestamp: Date.now(),
         };
         const notification2: AtlasCodeNotification = {
-            id: '2',
+            id: generateRandomString(),
             message: 'Test Notification 2',
             notificationType: NotificationType.JiraComment,
             uri: uri,
@@ -176,7 +189,7 @@ describe('NotificationManagerImpl', () => {
     it('should filter notifications by surface type', () => {
         const uri = Uri.parse(generateRandomFileUri());
         const bannerOnlyNotification: AtlasCodeNotification = {
-            id: '1',
+            id: generateRandomString(),
             message: 'Banner Notification',
             notificationType: NotificationType.AssignedToYou,
             uri: uri,
@@ -184,7 +197,7 @@ describe('NotificationManagerImpl', () => {
             timestamp: Date.now(),
         };
         const badgeAndBannerNotification: AtlasCodeNotification = {
-            id: '2',
+            id: generateRandomString(),
             message: 'Badge and Badge Notification',
             notificationType: NotificationType.LoginNeeded,
             uri: uri,
@@ -208,4 +221,8 @@ describe('NotificationManagerImpl', () => {
 
 function generateRandomFileUri(): string {
     return `file://${Math.random().toString(36).substring(2)}`;
+}
+
+function generateRandomString(): string {
+    return Math.random().toString(36).substring(2);
 }

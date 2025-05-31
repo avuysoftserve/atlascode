@@ -1,4 +1,3 @@
-import { Experiments, FeatureFlagClient } from 'src/util/featureFlags';
 import { Disposable, Uri } from 'vscode';
 
 import { AuthInfo, AuthInfoEvent, isRemoveAuthEvent, ProductBitbucket, ProductJira } from '../../atlclients/authInfo';
@@ -6,6 +5,7 @@ import { graphqlRequest } from '../../atlclients/graphql/graphqlClient';
 import { notificationFeedVSCode, unseenNotificationCountVSCode } from '../../atlclients/graphql/graphqlDocuments';
 import { Container } from '../../container';
 import { Logger } from '../../logger';
+import { Experiments, FeatureFlagClient } from '../../util/featureFlags';
 import {
     AtlasCodeNotification,
     NotificationManagerImpl,

@@ -4,7 +4,6 @@ import { ProductJira } from '../../atlclients/authInfo';
 import { BadgeDelegate } from './badgeDelegate';
 import {
     AtlasCodeNotification,
-    NotificationAction,
     NotificationManagerImpl,
     NotificationSurface,
     NotificationType,
@@ -102,20 +101,16 @@ describe('BadgeDelegate', () => {
 
         // Case 1: 0 notifications
         (NotificationManagerImpl.getInstance().getNotificationsByUri as jest.Mock).mockReturnValue(new Map());
-        badgeDelegate.onNotificationChange({ action: NotificationAction.Added, notifications: new Map() });
-        expect(NotificationManagerImpl.getInstance().getNotificationsByUri).toHaveBeenCalledTimes(0);
-        expect(treeViewMock.badge).toEqual({
-            value: 0,
-            tooltip: '0 notifications',
-        });
+        badgeDelegate.provideFileDecoration(uri, {} as any);
+        expect(NotificationManagerImpl.getInstance().getNotificationsByUri).toHaveBeenCalledTimes(1);
+        expect(treeViewMock.badge).toEqual({ tooltip: '0 notifications', value: 0 });
 
         // Case 2: 1 notification
         (NotificationManagerImpl.getInstance().getNotificationsByUri as jest.Mock).mockReturnValue(
             new Map([[notification1.id, notification1]]),
         );
         // Create a real Map with a notification object that includes the uri
-        const notificationsMap = new Map([['notification1', notification1]]);
-        badgeDelegate.onNotificationChange({ action: NotificationAction.Added, notifications: notificationsMap });
+        badgeDelegate.provideFileDecoration(uri, {} as any);
         expect(treeViewMock.badge).toEqual({
             value: 1,
             tooltip: '1 notification',
@@ -128,10 +123,7 @@ describe('BadgeDelegate', () => {
                 [notification2.id, notification2],
             ]),
         );
-        badgeDelegate.onNotificationChange({
-            action: NotificationAction.Added,
-            notifications: new Map([[notification2.id, notification2]]),
-        });
+        badgeDelegate.provideFileDecoration(uri, {} as any);
         expect(treeViewMock.badge).toEqual({
             value: 2,
             tooltip: '2 notifications',
@@ -141,10 +133,7 @@ describe('BadgeDelegate', () => {
         (NotificationManagerImpl.getInstance().getNotificationsByUri as jest.Mock).mockReturnValue(
             new Map([[notification1.id, notification1]]),
         );
-        badgeDelegate.onNotificationChange({
-            action: NotificationAction.Removed,
-            notifications: new Map([[notification2.id, notification2]]),
-        });
+        badgeDelegate.provideFileDecoration(uri, {} as any);
         expect(treeViewMock.badge).toEqual({
             value: 1,
             tooltip: '1 notification',
@@ -152,10 +141,7 @@ describe('BadgeDelegate', () => {
 
         // Case 5: Back to 0 notifications
         (NotificationManagerImpl.getInstance().getNotificationsByUri as jest.Mock).mockReturnValue(new Map());
-        badgeDelegate.onNotificationChange({
-            action: NotificationAction.Removed,
-            notifications: new Map([[notification1.id, notification1]]),
-        });
+        badgeDelegate.provideFileDecoration(uri, {} as any);
         expect(treeViewMock.badge).toEqual({
             value: 0,
             tooltip: '0 notifications',
