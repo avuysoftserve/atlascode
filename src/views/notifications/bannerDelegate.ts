@@ -106,7 +106,7 @@ export class BannerDelegate implements NotificationDelegate {
                 const issueKey = this.getNotificationSourceKeyFromUri(notification.uri, notification.notificationType);
 
                 return {
-                    text: `View ${issueKey || 'Jira Issue'}`, // View AXON-123
+                    text: `View ${issueKey || 'Jira Issue'}`,
                     action: () => {
                         commands.executeCommand(Commands.ShowIssueForURL, notification.uri.toString());
                     },
@@ -115,7 +115,7 @@ export class BannerDelegate implements NotificationDelegate {
                 const prKey = this.getNotificationSourceKeyFromUri(notification.uri, notification.notificationType);
 
                 return {
-                    text: `View ${prKey || 'Pull Request'}`, // View PR 123
+                    text: `View ${prKey || 'Pull Request'}`,
                     action: () => {
                         commands.executeCommand(Commands.BitbucketOpenPullRequest, {
                             pullRequestUrl: notification.uri.toString(),

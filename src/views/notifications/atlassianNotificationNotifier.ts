@@ -1,3 +1,4 @@
+import { Experiments, FeatureFlagClient } from 'src/util/featureFlags';
 import { Disposable, Uri } from 'vscode';
 
 import { AuthInfo, AuthInfoEvent, isRemoveAuthEvent, ProductBitbucket, ProductJira } from '../../atlclients/authInfo';
@@ -76,7 +77,9 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
                     .map((node: any) => {
                         const notification = this.mapper(authInfo, node);
                         if (notification) {
-                            NotificationManagerImpl.getInstance().addNotification(notification);
+                            if (FeatureFlagClient.checkExperimentValue(Experiments.AtlassianNotifications)) {
+                                NotificationManagerImpl.getInstance().addNotification(notification);
+                            }
                         }
                     });
             })

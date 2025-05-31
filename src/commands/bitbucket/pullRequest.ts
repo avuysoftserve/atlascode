@@ -4,7 +4,7 @@ import { Uri } from 'vscode';
 export const extractPullRequestComponents = (url: string): { repoUrl: string; prId: number } => {
     const repoUrl = url.slice(0, url.indexOf('/pull-requests'));
     const prUrlPath = Uri.parse(url).path;
-    const prId = prUrlPath.slice(prUrlPath.lastIndexOf('/') + 1);
+    const prId = prUrlPath.split('/pull-requests/')[1]?.split('/')[0];
     return { repoUrl, prId: parseInt(prId) };
 };
 
