@@ -175,7 +175,14 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
     }
 
     private isBitbucketNotification(node: any): boolean {
-        return node.headNotification.content.url.includes('bitbucket.org/');
+        try {
+            const parsedUrl = new URL(node.headNotification.content.url);
+            const allowedHosts = ['bitbucket.org'];
+            return allowedHosts.includes(parsedUrl.host);
+        } catch (error) {
+            Logger.error(new Error(`Error parsing URL: ${error}`));
+            return false;
+        }
     }
 
     private isCommentNotification(node: any): boolean {
