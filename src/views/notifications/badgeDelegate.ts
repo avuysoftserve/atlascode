@@ -4,6 +4,7 @@ import { notificationChangeEvent } from '../../analytics';
 import { AnalyticsClient } from '../../analytics-node-client/src/client.min';
 import { Container } from '../../container';
 import {
+    NotificationAction,
     NotificationChangeEvent,
     NotificationDelegate,
     NotificationManagerImpl,
@@ -41,6 +42,20 @@ export class BadgeDelegate implements FileDecorationProvider, NotificationDelega
     }
 
     public onNotificationChange(event: NotificationChangeEvent): void {
+        // iterate though the URIs in the event and update the badges
+        if (event.action === NotificationAction.Removed || event.action === NotificationAction.MarkedAsRead) {
+            event.notifications.forEach((notification) => {
+                if (!this.badgesRegistration[notification.uri.toString()]) {
+                    return;
+                }
+                const uri = notification.uri;
+                const newBadgeValue = 0;
+                const oldBadgeValue = this.badgesRegistration[uri.toString()];
+                delete this.badgesRegistration[uri.toString()];
+                this.updateOverallCount(oldBadgeValue, newBadgeValue);
+            });
+        }
+
         this._onDidChangeFileDecorations.fire(undefined);
     }
 
