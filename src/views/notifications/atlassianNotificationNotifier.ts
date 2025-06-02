@@ -13,7 +13,7 @@ import {
     NotificationType,
 } from './notificationManager';
 
-export class AtlassianNotificationNotifier implements NotificationNotifier, Disposable {
+export class AtlassianNotificationNotifier extends Disposable implements NotificationNotifier {
     private static instance: AtlassianNotificationNotifier;
 
     private _lastUnseenNotificationCount: Record<string, number> = {};
@@ -28,6 +28,9 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
         return AtlassianNotificationNotifier.instance;
     }
     private constructor() {
+        super(() => {
+            this.dispose();
+        });
         this._disposable.push(Disposable.from(Container.credentialManager.onDidAuthChange(this.onDidAuthChange, this)));
     }
 
@@ -202,18 +205,7 @@ export class AtlassianNotificationNotifier implements NotificationNotifier, Disp
         const isJira = this.isJiraNotification(node);
         const isBitbucket = this.isBitbucketNotification(node);
 
-        if (isJira) {
-            if (isComment) {
-                return true; // Include Jira comments
-            }
-        }
-        if (isBitbucket) {
-            if (isComment) {
-                return true; // Include Jira comments
-            }
-        }
-
-        return false;
+        return isComment && (isJira || isBitbucket);
     }
 
     private shouldRateLimit(authInfo: AuthInfo): boolean {

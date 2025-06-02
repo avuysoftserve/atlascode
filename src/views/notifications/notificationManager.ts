@@ -5,6 +5,7 @@ import { configuration } from '../../config/configuration';
 import { Container } from '../../container';
 import { Logger } from '../../logger';
 import { FeatureFlagClient, Features } from '../../util/featureFlags';
+import { Time } from '../../util/time';
 import { AtlassianNotificationNotifier } from './atlassianNotificationNotifier';
 import { AuthNotifier } from './authNotifier';
 import { BannerDelegate } from './bannerDelegate';
@@ -71,7 +72,7 @@ const ENABLE_BANNER_FOR = [
     NotificationType.LoginNeeded,
     NotificationType.Other,
 ];
-export class NotificationManagerImpl implements Disposable {
+export class NotificationManagerImpl extends Disposable {
     private notifications: Map<string, Map<string, AtlasCodeNotification>> = new Map();
     private static instance: NotificationManagerImpl;
     private delegates: Set<NotificationDelegate> = new Set();
@@ -83,6 +84,7 @@ export class NotificationManagerImpl implements Disposable {
     private userReadNotifications: { id: string; timestamp: number }[] = [];
 
     private constructor() {
+        super(() => this.dispose());
         this._disposable.push(Disposable.from(Container.credentialManager.onDidAuthChange(this.onDidAuthChange, this)));
         this._disposable.push(Disposable.from(configuration.onDidChange(this.onDidChangeConfiguration, this)));
         this._disposable.push(Disposable.from(window.onDidChangeWindowState(this.runNotifiers, this)));
@@ -360,6 +362,6 @@ class NotificationDB {
     }
 
     private static isGoodTTL(notification: { id: string; timestamp: number }): boolean {
-        return Date.now() - notification.timestamp < 8 * 24 * 60 * 60 * 1000; // 8 days
+        return Date.now() - notification.timestamp < 8 * Time.DAYS;
     }
 }

@@ -6,7 +6,7 @@ import { Container } from '../../container';
 import { loginToJiraMessageNode } from '../jira/treeViews/utils';
 import { NotificationManagerImpl, NotificationNotifier, NotificationType } from './notificationManager';
 
-export class AuthNotifier implements NotificationNotifier, Disposable {
+export class AuthNotifier extends Disposable implements NotificationNotifier {
     private static instance: AuthNotifier;
     private _disposable: Disposable[] = [];
     private _jiraEnabled: boolean;
@@ -19,6 +19,9 @@ export class AuthNotifier implements NotificationNotifier, Disposable {
     }
 
     private constructor() {
+        super(() => {
+            this.dispose();
+        });
         this._disposable.push(
             Disposable.from(Container.credentialManager.onDidAuthChange(this.fetchNotifications, this)),
         );
