@@ -1,4 +1,5 @@
 import path from 'path';
+import { Logger } from 'src/logger';
 import { getHtmlForView } from 'src/webview/common/getHtmlForView';
 import { CancellationToken, Uri, WebviewView, WebviewViewProvider, WebviewViewResolveContext, window } from 'vscode';
 
@@ -37,10 +38,50 @@ export class RovoDevWebviewProvider implements WebviewViewProvider {
             switch (e.type) {
                 case 'prompt':
                     const message = e.text;
-                    webviewView.webview.postMessage({
-                        type: 'response',
-                        text: `${message}??? I don't know, I'm not that intelligent.`,
-                    });
+                    const url = 'http://localhost:8899/v2/chat';
+                    const payload = {
+                        message: message,
+                    };
+
+                    interface FetchPayload {
+                        message: string;
+                    }
+
+                    interface FetchResponseData {
+                        content?: string;
+                    }
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            accept: 'text/event-stream',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload as FetchPayload),
+                    })
+                        .then(async (response: Response) => {
+                            const text: string = await response.text();
+                            const lines: string[] = text.split('\n').filter((line: string) => line.trim() !== '');
+                            for (const line of lines) {
+                                Logger.debug(`Received line: ${line}`);
+                                if (line.startsWith('data:')) {
+                                    const data: FetchResponseData = JSON.parse(line.substring(5).trim());
+                                    if (data.content) {
+                                        await webviewView.webview.postMessage({
+                                            type: 'response',
+                                            text: data.content,
+                                        });
+                                    }
+                                }
+                            }
+                        })
+                        .catch((error: Error) => {
+                            console.error('Error fetching data:', error);
+                            webviewView.webview.postMessage({
+                                type: 'response',
+                                text: `Error: ${error.message}`,
+                            });
+                        });
                     break;
             }
         });

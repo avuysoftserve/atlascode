@@ -10,12 +10,12 @@ const RovoDevView: React.FC = () => {
         (message: any): void => {
             switch (message.type) {
                 case 'response': {
-                    setResponseText(message.text);
+                    setResponseText(responseText + message.text);
                     break;
                 }
             }
         },
-        [setResponseText],
+        [setResponseText, responseText],
     );
 
     const [postMessage] = useMessagingApi<any, any, any>(onMessageHandler);
