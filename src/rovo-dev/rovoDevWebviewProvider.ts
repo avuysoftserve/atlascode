@@ -32,5 +32,17 @@ export class RovoDevWebviewProvider implements WebviewViewProvider {
             webviewView.webview.cspSource,
             this.viewType,
         );
+
+        webviewView.webview.onDidReceiveMessage((e) => {
+            switch (e.type) {
+                case 'prompt':
+                    const message = e.text;
+                    webviewView.webview.postMessage({
+                        type: 'response',
+                        text: `${message}??? I don't know, I'm not that intelligent.`,
+                    });
+                    break;
+            }
+        });
     }
 }
