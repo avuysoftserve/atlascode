@@ -409,6 +409,11 @@
                     "id": "atlascode-drawer",
                     "title": "Atlassian",
                     "icon": "resources/atlassian-icon.svg"
+                },
+                {
+                    "id": "atlascode-rovo-dev",
+                    "title": "Rovo Dev",
+                    "icon": "$(rocket)"
                 }
             ]
         },
@@ -438,6 +443,13 @@
                     "id": "atlascode.views.helpTreeView",
                     "name": "Help and Feedback",
                     "when": "config.atlascode.helpExplorerEnabled"
+                }
+            ],
+            "atlascode-rovo-dev": [
+                {
+                    "id": "atlascode.views.rovoDev.webView",
+                    "name": "Rovo Dev",
+                    "type": "webview"
                 }
             ]
         },
