@@ -2,8 +2,8 @@ import { commands, window } from 'vscode';
 
 import { clientForSite } from '../../bitbucket/bbUtils';
 import { BitbucketSite, WorkspaceRepo } from '../../bitbucket/model';
-import { Commands } from '../../commands';
 import { configuration } from '../../config/configuration';
+import { Commands } from '../../constants';
 import { Container } from '../../container';
 import { Pipeline, PipelineTarget } from '../../pipelines/model';
 import { shouldDisplay } from '../pipelines/Helpers';
