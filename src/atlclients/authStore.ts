@@ -265,7 +265,7 @@ export class CredentialManager implements Disposable {
         return wasKeyDeleted;
     }
 
-    public async getAuthInfoFromSecretStorage(
+    private async getAuthInfoFromSecretStorage(
         productKey: string,
         credentialId: string,
         serviceName?: string,

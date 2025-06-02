@@ -140,6 +140,7 @@ export class BitbucketCheckoutHelper implements CheckoutHelper {
             this.showLoginMessage(
                 'Cannot open pull request. Authenticate with Bitbucket in the extension settings and try again.',
             );
+            commands.executeCommand(Commands.ShowBitbucketAuth);
         }
     }
 
