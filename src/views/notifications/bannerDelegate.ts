@@ -93,7 +93,7 @@ export class BannerDelegate implements NotificationDelegate {
             switch (selection) {
                 case yesText:
                     yesAction();
-                    this.analyticsBannerAction(notification.uri, notification.notificationType, yesText);
+                    this.analyticsBannerAction(notification, yesText);
                     break;
                 default:
                     break;
@@ -146,12 +146,12 @@ export class BannerDelegate implements NotificationDelegate {
         });
     }
 
-    private analyticsBannerAction(uri: Uri, type: NotificationType, action: string) {
+    private analyticsBannerAction(notification: AtlasCodeNotification, action: string) {
         notificationActionButtonClickedEvent(
-            uri,
+            notification.uri,
             {
                 surface: NotificationSurface.Banner,
-                type,
+                type: notification.notificationType,
             },
             action,
         ).then((e) => {
