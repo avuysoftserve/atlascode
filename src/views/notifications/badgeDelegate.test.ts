@@ -9,19 +9,6 @@ import {
     NotificationType,
 } from './notificationManager';
 
-jest.mock('vscode', () => ({
-    EventEmitter: jest.fn().mockImplementation(() => ({
-        fire: jest.fn(),
-        event: jest.fn(),
-    })),
-    ThemeColor: jest.fn(),
-    Uri: {
-        parse: jest.fn((uri: string) => ({ toString: () => uri })),
-    },
-    window: {
-        registerFileDecorationProvider: jest.fn(),
-    },
-}));
 jest.mock('../../analytics', () => ({
     notificationChangeEvent: jest.fn().mockResolvedValue({}),
 }));

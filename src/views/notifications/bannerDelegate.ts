@@ -2,8 +2,8 @@ import { commands, Uri, window } from 'vscode';
 
 import { notificationActionButtonClickedEvent, notificationChangeEvent } from '../../analytics';
 import { AnalyticsClient } from '../../analytics-node-client/src/client.min';
-import { Commands } from '../../commands';
 import { extractPullRequestComponents } from '../../commands/bitbucket/pullRequest';
+import { Commands } from '../../constants';
 import { Container } from '../../container';
 import {
     AtlasCodeNotification,
