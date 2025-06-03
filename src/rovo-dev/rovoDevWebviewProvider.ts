@@ -11,13 +11,8 @@ import {
     window,
 } from 'vscode';
 
-interface FetchPayload {
-    message: string;
-}
+import { FetchPayload, FetchResponseData } from './utils';
 
-interface FetchResponseData {
-    content?: string;
-}
 export class RovoDevWebviewProvider extends Disposable implements WebviewViewProvider {
     private readonly viewType = 'atlascodeRovoDev';
     private _webView?: Webview;
@@ -110,12 +105,10 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
                     if (trimmed.startsWith('data:')) {
                         try {
                             const data: FetchResponseData = JSON.parse(trimmed.substring(5).trim());
-                            if (data.content) {
-                                await this._webView.postMessage({
-                                    type: 'response',
-                                    text: data.content,
-                                });
-                            }
+                            await this._webView.postMessage({
+                                type: 'response',
+                                dataObject: data,
+                            });
                         } catch (err) {
                             // Ignore JSON parse errors for incomplete lines
                             console.error('Error parsing JSON from response:', err);
