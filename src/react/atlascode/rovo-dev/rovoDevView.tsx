@@ -142,7 +142,7 @@ const RovoDevView: React.FC = () => {
             <div className="rovo-dev-prompt-container">
                 <textarea
                     className="rovo-dev-textarea"
-                    placeholder="What do you want AcraMini to do?"
+                    placeholder="Edit files in your workspace with Rovo Dev Agent"
                     onChange={(element) => setPromptText(element.target.value)}
                     onKeyDown={handleKeyDown}
                     value={promptText}

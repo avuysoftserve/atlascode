@@ -42,7 +42,7 @@ export function registerCommands(vscodeContext: ExtensionContext) {
         commands.registerCommand(Commands.RovodevCommand, async () => {
             window
                 .showInputBox({
-                    placeHolder: 'What do you want Rovodev-chan to do?',
+                    placeHolder: 'Edit files in your workspace with Rovo Dev Agent',
                     prompt: 'Type your command here',
                 })
                 .then((text) => {
