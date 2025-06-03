@@ -72,6 +72,16 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
             return;
         }
 
+        // First, send user message
+        await this._webView.postMessage({
+            type: 'userChatMessage',
+            message: {
+                text: message,
+                author: 'User',
+                timestamp: Date.now(),
+            },
+        });
+
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -93,6 +103,11 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) {
+                    // Send final complete message when stream ends
+
+                    await this._webView.postMessage({
+                        type: 'completeMessage',
+                    });
                     break;
                 }
                 buffer += decoder.decode(value, { stream: true });
@@ -105,6 +120,8 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
                     if (trimmed.startsWith('data:')) {
                         try {
                             const data: FetchResponseData = JSON.parse(trimmed.substring(5).trim());
+
+                            // Still send individual chunks for streaming UI effect
                             await this._webView.postMessage({
                                 type: 'response',
                                 dataObject: data,
@@ -119,8 +136,12 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
         } catch (error) {
             console.error('Error fetching data:', error);
             await this._webView.postMessage({
-                type: 'response',
-                text: `Error: ${error.message}`,
+                type: 'userChatMessage',
+                message: {
+                    text: `Error: ${error.message}`,
+                    author: 'Agent',
+                    timestamp: Date.now(),
+                },
             });
         }
     }
@@ -140,6 +161,7 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
             return;
         }
 
+        // This will populate the prompt field
         await this._webView.postMessage({
             type: 'invokeData',
             prompt,

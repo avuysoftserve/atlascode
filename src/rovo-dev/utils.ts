@@ -7,3 +7,13 @@ export interface FetchResponseData {
     part_kind?: string;
     tool_name?: string;
 }
+
+export interface ChatMessage {
+    text: string;
+    author: 'User' | 'Agent';
+    timestamp: number;
+}
+
+export interface ChatHistory {
+    messages: ChatMessage[];
+}

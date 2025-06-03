@@ -1,43 +1,76 @@
 import './RovoDev.css';
 
 import React, { useCallback, useState } from 'react';
-import { FetchResponseData } from 'src/rovo-dev/utils';
+import { ChatMessage, FetchResponseData } from 'src/rovo-dev/utils';
 
 import { useMessagingApi } from '../messagingApi';
 
 const RovoDevView: React.FC = () => {
     const [promptText, setPromptText] = useState('');
-    const [responseText, setResponseText] = useState(' ');
+    const [currentResponse, setCurrentResponse] = useState('');
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    const chatEndRef = React.useRef<HTMLDivElement>(null);
+
+    // Scroll to bottom when chat updates
+    React.useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [chatHistory, currentResponse]);
 
     const handleResponse = useCallback(
         (data: FetchResponseData) => {
             console.log('Received response data:', data);
             switch (data.part_kind) {
                 case 'text-chunk':
-                    setResponseText((prevText) => prevText + data.content);
+                    setCurrentResponse((prevText) => prevText + (data.content || ''));
                     break;
                 case 'tool-call':
-                    setResponseText((prevText) => prevText + `\n\nTool call: ${data.tool_name}\n\n`);
+                    setCurrentResponse((prevText) => prevText + `\n\nTool call: ${data.tool_name}\n\n`);
                     break;
                 case 'tool-return':
-                    setResponseText(
+                    setCurrentResponse(
                         (prevText) => prevText + `\n\nTool return:${data.tool_name} -> ${data.content}\n\n`,
                     );
                     break;
                 default:
-                    setResponseText((prevText) => prevText + `\n\nUnknown part_kind: ${data.part_kind}\n\n`);
+                    setCurrentResponse((prevText) => prevText + `\n\nUnknown part_kind: ${data.part_kind}\n\n`);
                     break;
             }
         },
-        [setResponseText],
+        [setCurrentResponse],
     );
 
     const onMessageHandler = useCallback(
         (message: any): void => {
+            console.log('Received message:', message);
             switch (message.type) {
                 case 'response': {
                     const data = message.dataObject;
                     handleResponse(data);
+                    break;
+                }
+                case 'userChatMessage': {
+                    const userMessage: ChatMessage = {
+                        text: message.message.text,
+                        author: 'User',
+                        timestamp: Date.now(),
+                    };
+                    setChatHistory((prev) => [...prev, userMessage]);
+                    break;
+                }
+
+                case 'completeMessage': {
+                    console.log('curentResponse:', currentResponse);
+                    setChatHistory((prev) => [
+                        ...prev,
+                        {
+                            text: currentResponse,
+                            author: 'Agent',
+                            timestamp: Date.now(),
+                        },
+                    ]);
+                    setCurrentResponse('');
                     break;
                 }
 
@@ -52,20 +85,23 @@ const RovoDevView: React.FC = () => {
                     break;
             }
         },
-        [handleResponse],
+        [handleResponse, currentResponse],
     );
 
     const [postMessage] = useMessagingApi<any, any, any>(onMessageHandler);
 
     const sendPrompt = useCallback(
         (text: string): void => {
-            setResponseText('');
+            // Send the prompt to backend
             postMessage({
                 type: 'prompt',
                 text,
             });
+
+            // Clear the input field
+            setPromptText('');
         },
-        [postMessage, setResponseText],
+        [postMessage],
     );
 
     const handleKeyDown = useCallback(
@@ -78,14 +114,31 @@ const RovoDevView: React.FC = () => {
         [sendPrompt, promptText],
     );
 
+    // Render chat message
+    const renderChatMessage = (message: ChatMessage, index: number) => {
+        return (
+            <div key={index} className={`chat-message ${message.author.toLowerCase()}-message`}>
+                <div className="message-author">{message.author}</div>
+                <div className="message-content">{message.text}</div>
+            </div>
+        );
+    };
+
     return (
         <div className="rovo-dev-container">
-            <textarea
-                className="rovo-dev-stream"
-                placeholder="...waiting for a response..."
-                readOnly={true}
-                value={responseText}
-            />
+            <div className="chat-messages-container">
+                {chatHistory.map((msg, index) => renderChatMessage(msg, index))}
+
+                {/* Show streaming response if available */}
+                {currentResponse && (
+                    <div className="chat-message agent-message streaming-message">
+                        <div className="message-author">Agent</div>
+                        <div className="message-content">{currentResponse}</div>
+                    </div>
+                )}
+                <div ref={chatEndRef} />
+            </div>
+
             <div className="rovo-dev-prompt-container">
                 <textarea
                     className="rovo-dev-textarea"
