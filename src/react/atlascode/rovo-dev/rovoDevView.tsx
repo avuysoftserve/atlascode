@@ -1,3 +1,5 @@
+import './RovoDev.css';
+
 import React, { useCallback, useState } from 'react';
 
 import { useMessagingApi } from '../messagingApi';
@@ -31,18 +33,39 @@ const RovoDevView: React.FC = () => {
         [postMessage, setResponseText],
     );
 
+    const handleKeyDown = useCallback(
+        (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendPrompt(promptText);
+            }
+        },
+        [sendPrompt, promptText],
+    );
+
     return (
-        <div>
+        <div className="rovo-dev-container">
             <textarea
-                placeholder="What do you want AcraMini to do?"
-                onChange={(element) => setPromptText(element.target.value)}
+                className="rovo-dev-stream"
+                placeholder="...waiting for a response..."
+                readOnly={true}
+                value={responseText}
             />
-            <br />
-            <button onClick={() => sendPrompt(promptText)}>Send</button>
+            <div className="rovo-dev-prompt-container">
+                <textarea
+                    className="rovo-dev-textarea"
+                    placeholder="What do you want AcraMini to do?"
+                    onChange={(element) => setPromptText(element.target.value)}
+                    onKeyDown={handleKeyDown}
+                />
+                <br />
+                <button className="rovo-dev-send-button" onClick={() => sendPrompt(promptText)} title="Send prompt">
+                    Send
+                </button>
+            </div>
 
             <br />
             <br />
-            <textarea placeholder="...waiting for a response..." readOnly={true} value={responseText} />
         </div>
     );
 };

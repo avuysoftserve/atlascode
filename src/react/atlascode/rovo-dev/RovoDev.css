@@ -1,0 +1,56 @@
+.rovo-dev-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    height: 100vh;
+    box-sizing: border-box;
+    background-color: var(--vscode-editor-background);
+}
+
+.rovo-dev-prompt-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    height: 100px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    padding: 10px 20px;
+    border-top: 1px solid var(--vscode-panel-border);
+    background: var(--vscode-sideBar-background);
+    z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.rovo-dev-textarea,
+.rovo-dev-textarea:enabled,
+.rovo-dev-textarea:focus {
+    width: 100%;
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 2px;
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    resize: none;
+    padding: 12px 15px;
+    outline: none;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.rovo-dev-stream {
+    width: 100%;
+    max-width: 800px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 20px;
+    margin-bottom: 70px;
+    display: flex;
+    flex-direction: column;
+    resize: none;
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+}
+
+/* .rovo-dev-send-button {} */

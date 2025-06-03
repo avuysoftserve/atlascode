@@ -200,7 +200,7 @@ export class Container {
 
         this._onboardingProvider = new OnboardingProvider();
 
-        new RovoDevWebviewProvider(context.extensionPath);
+        context.subscriptions.push(new RovoDevWebviewProvider(context.extensionPath));
     }
 
     static focus() {

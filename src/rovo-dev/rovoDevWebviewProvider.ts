@@ -1,16 +1,39 @@
 import path from 'path';
-//import { Logger } from 'src/logger';
 import { getHtmlForView } from 'src/webview/common/getHtmlForView';
-import { CancellationToken, Uri, WebviewView, WebviewViewProvider, WebviewViewResolveContext, window } from 'vscode';
+import {
+    CancellationToken,
+    Disposable,
+    Uri,
+    Webview,
+    WebviewView,
+    WebviewViewProvider,
+    WebviewViewResolveContext,
+    window,
+} from 'vscode';
 
-export class RovoDevWebviewProvider implements WebviewViewProvider {
+interface FetchPayload {
+    message: string;
+}
+
+interface FetchResponseData {
+    content?: string;
+}
+export class RovoDevWebviewProvider extends Disposable implements WebviewViewProvider {
     private readonly viewType = 'atlascodeRovoDev';
+    private _webView?: Webview;
+
+    private _disposables: Disposable[] = [];
 
     constructor(private extensionPath: string) {
-        // Register the webview view provider
-        window.registerWebviewViewProvider('atlascode.views.rovoDev.webView', this, {
-            webviewOptions: { retainContextWhenHidden: true },
+        super(() => {
+            this._dispose();
         });
+        // Register the webview view provider
+        this._disposables.push(
+            window.registerWebviewViewProvider('atlascode.views.rovoDev.webView', this, {
+                webviewOptions: { retainContextWhenHidden: true },
+            }),
+        );
     }
 
     public resolveWebviewView(
@@ -18,41 +41,41 @@ export class RovoDevWebviewProvider implements WebviewViewProvider {
         _context: WebviewViewResolveContext,
         _token: CancellationToken,
     ): Thenable<void> | void {
-        webviewView.webview.options = {
+        this._webView = webviewView.webview;
+
+        this._webView.options = {
             enableCommandUris: true,
             enableScripts: true,
             localResourceRoots: [Uri.file(path.join(this.extensionPath, 'build'))],
         };
 
-        webviewView.webview.html = getHtmlForView(
+        this._webView.html = getHtmlForView(
             this.extensionPath,
             webviewView.webview.asWebviewUri(Uri.file(this.extensionPath)),
             webviewView.webview.cspSource,
             this.viewType,
         );
 
-        webviewView.webview.onDidReceiveMessage(async (e) => {
+        this._webView.onDidReceiveMessage(async (e) => {
             switch (e.type) {
                 case 'prompt':
-                    await this.processPromptMessage(webviewView, e);
+                    await this.processPromptMessage(e);
                     break;
             }
         });
     }
 
-    private async processPromptMessage(webviewView: WebviewView, e: any) {
+    private async processPromptMessage(e: any) {
         const message = e.text;
         const url = 'http://localhost:8899/v2/chat';
-        const payload = {
+
+        const payload: FetchPayload = {
             message: message,
         };
 
-        interface FetchPayload {
-            message: string;
-        }
-
-        interface FetchResponseData {
-            content?: string;
+        if (!this._webView) {
+            console.error('Webview is not initialized.');
+            return;
         }
 
         try {
@@ -62,29 +85,59 @@ export class RovoDevWebviewProvider implements WebviewViewProvider {
                     accept: 'text/event-stream',
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(payload as FetchPayload),
+                body: JSON.stringify(payload),
             });
 
-            const text: string = await response.text();
-            const lines: string[] = text.split('\n').filter((line: string) => line.trim() !== '');
-            for (const line of lines) {
-                //Logger.debug(`Received line: ${line}`);
-                if (line.startsWith('data:')) {
-                    const data: FetchResponseData = JSON.parse(line.substring(5).trim());
-                    if (data.content) {
-                        await webviewView.webview.postMessage({
-                            type: 'response',
-                            text: data.content,
-                        });
+            if (!response.body) {
+                throw new Error('No response body');
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('data:')) {
+                        try {
+                            const data: FetchResponseData = JSON.parse(trimmed.substring(5).trim());
+                            if (data.content) {
+                                await this._webView.postMessage({
+                                    type: 'response',
+                                    text: data.content,
+                                });
+                            }
+                        } catch (err) {
+                            // Ignore JSON parse errors for incomplete lines
+                            console.error('Error parsing JSON from response:', err);
+                        }
                     }
                 }
             }
         } catch (error) {
             console.error('Error fetching data:', error);
-            await webviewView.webview.postMessage({
+            await this._webView.postMessage({
                 type: 'response',
                 text: `Error: ${error.message}`,
             });
+        }
+    }
+
+    private _dispose() {
+        this._disposables.forEach((d) => d.dispose());
+        this._disposables = [];
+        if (this._webView) {
+            this._webView = undefined;
         }
     }
 }
