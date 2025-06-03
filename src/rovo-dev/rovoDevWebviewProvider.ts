@@ -136,7 +136,7 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
         } catch (error) {
             console.error('Error fetching data:', error);
             await this._webView.postMessage({
-                type: 'userChatMessage',
+                type: 'errorMessage',
                 message: {
                     text: `Error: ${error.message}`,
                     author: 'Agent',

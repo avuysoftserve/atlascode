@@ -6,6 +6,7 @@ import { ChatMessage, FetchResponseData } from 'src/rovo-dev/utils';
 import { useMessagingApi } from '../messagingApi';
 
 const RovoDevView: React.FC = () => {
+    const [sendButtonDisabled, setSendButtonDisabled] = useState(false);
     const [promptText, setPromptText] = useState('');
     const [currentResponse, setCurrentResponse] = useState('');
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -26,11 +27,13 @@ const RovoDevView: React.FC = () => {
                     setCurrentResponse((prevText) => prevText + (data.content || ''));
                     break;
                 case 'tool-call':
-                    setCurrentResponse((prevText) => prevText + `\n\nTool call: ${data.tool_name}\n\n`);
+                    setCurrentResponse(
+                        (prevText) => prevText + `\n\n<TOOL_CALL>${data.tool_name}@@@@${data.args}</TOOL_CALL>\n\n`,
+                    );
                     break;
                 case 'tool-return':
                     setCurrentResponse(
-                        (prevText) => prevText + `\n\nTool return:${data.tool_name} -> ${data.content}\n\n`,
+                        (prevText) => prevText + `\n\nTool return: ${data.tool_name} -> ${data.content}\n\n`,
                     );
                     break;
                 default:
@@ -42,26 +45,19 @@ const RovoDevView: React.FC = () => {
     );
 
     const onMessageHandler = useCallback(
-        (message: any): void => {
-            console.log('Received message:', message);
-            switch (message.type) {
+        (event: any): void => {
+            switch (event.type) {
                 case 'response': {
-                    const data = message.dataObject;
+                    const data = event.dataObject;
                     handleResponse(data);
                     break;
                 }
                 case 'userChatMessage': {
-                    const userMessage: ChatMessage = {
-                        text: message.message.text,
-                        author: 'User',
-                        timestamp: Date.now(),
-                    };
-                    setChatHistory((prev) => [...prev, userMessage]);
+                    setChatHistory((prev) => [...prev, event.message]);
                     break;
                 }
 
                 case 'completeMessage': {
-                    console.log('curentResponse:', currentResponse);
                     setChatHistory((prev) => [
                         ...prev,
                         {
@@ -71,17 +67,24 @@ const RovoDevView: React.FC = () => {
                         },
                     ]);
                     setCurrentResponse('');
+                    setSendButtonDisabled(false);
+                    break;
+                }
+
+                case 'errorMessage': {
+                    setChatHistory((prev) => [...prev, event.message]);
+                    setSendButtonDisabled(false);
                     break;
                 }
 
                 case 'invokeData': {
-                    const prompt = message.prompt;
+                    const prompt = event.prompt;
                     setPromptText(prompt);
                     break;
                 }
 
                 default:
-                    console.warn('Unknown message type:', message.type);
+                    console.warn('Unknown message type:', event.type);
                     break;
             }
         },
@@ -92,6 +95,13 @@ const RovoDevView: React.FC = () => {
 
     const sendPrompt = useCallback(
         (text: string): void => {
+            if (sendButtonDisabled) {
+                return;
+            }
+
+            // Disable the send button
+            setSendButtonDisabled(true);
+
             // Send the prompt to backend
             postMessage({
                 type: 'prompt',
@@ -101,7 +111,7 @@ const RovoDevView: React.FC = () => {
             // Clear the input field
             setPromptText('');
         },
-        [postMessage],
+        [postMessage, sendButtonDisabled, setSendButtonDisabled],
     );
 
     const handleKeyDown = useCallback(
@@ -114,12 +124,51 @@ const RovoDevView: React.FC = () => {
         [sendPrompt, promptText],
     );
 
+    // Function to render message content with tool call highlighting
+    const renderMessageContent = (text: string) => {
+        // Split the text by tool call markers
+        const parts = text.split(/(<TOOL_CALL>.*?<\/TOOL_CALL>)/g);
+
+        return parts.map((part, index) => {
+            if (part.match(/^<TOOL_CALL>.*<\/TOOL_CALL>$/)) {
+                // Extract tool call information
+                const toolCallContent = part.replace(/^<TOOL_CALL>/, '').replace(/<\/TOOL_CALL>$/, '');
+                const [toolName, argsStr] = toolCallContent.split('@@@@');
+
+                // let formattedArgs = '';
+                // try {
+                //     const args = JSON.parse(argsStr || '{}');
+                //     formattedArgs = Object.keys(args).length > 0 ? JSON.stringify(args, null, 2) : '';
+                // } catch {
+                //     formattedArgs = argsStr || '';
+                // }
+
+                return (
+                    <div key={index} className="tool-call-bubble">
+                        <div className="tool-call-header">
+                            <span className="tool-call-icon">🔧</span>
+                            <span className="tool-call-name">{toolName}</span>
+                        </div>
+                        {argsStr && (
+                            <div className="tool-call-args">
+                                <pre>{argsStr}</pre>
+                            </div>
+                        )}
+                    </div>
+                );
+            } else {
+                // Regular text content
+                return part ? <span key={index}>{part}</span> : null;
+            }
+        });
+    };
+
     // Render chat message
     const renderChatMessage = (message: ChatMessage, index: number) => {
         return (
             <div key={index} className={`chat-message ${message.author.toLowerCase()}-message`}>
                 <div className="message-author">{message.author}</div>
-                <div className="message-content">{message.text}</div>
+                <div className="message-content">{renderMessageContent(message.text)}</div>
             </div>
         );
     };
@@ -133,7 +182,7 @@ const RovoDevView: React.FC = () => {
                 {currentResponse && (
                     <div className="chat-message agent-message streaming-message">
                         <div className="message-author">Agent</div>
-                        <div className="message-content">{currentResponse}</div>
+                        <div className="message-content">{renderMessageContent(currentResponse)}</div>
                     </div>
                 )}
                 <div ref={chatEndRef} />
@@ -148,7 +197,12 @@ const RovoDevView: React.FC = () => {
                     value={promptText}
                 />
                 <br />
-                <button className="rovo-dev-send-button" onClick={() => sendPrompt(promptText)} title="Send prompt">
+                <button
+                    className="rovo-dev-send-button"
+                    onClick={() => sendPrompt(promptText)}
+                    title="Send prompt"
+                    disabled={sendButtonDisabled}
+                >
                     Send
                 </button>
             </div>

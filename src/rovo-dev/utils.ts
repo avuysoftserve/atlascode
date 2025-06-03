@@ -6,6 +6,7 @@ export interface FetchResponseData {
     content?: string;
     part_kind?: string;
     tool_name?: string;
+    args?: any;
 }
 
 export interface ChatMessage {

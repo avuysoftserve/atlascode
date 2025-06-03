@@ -85,4 +85,49 @@
     color: var(--vscode-editor-foreground);
 }
 
+/* Tool call styling */
+.tool-call-bubble {
+    margin: 8px 0;
+    padding: 12px;
+    border: 2px solid var(--vscode-terminal-border);
+    border-left: 4px solid var(--vscode-terminal-ansiGreen);
+    border-radius: 6px;
+    background-color: var(--vscode-terminal-background);
+    font-family: 'SFMono-Medium', 'SF Mono', 'Segoe UI Mono', 'Roboto Mono', 'Ubuntu Mono', Menlo, Consolas, Courier, monospace;
+}
+
+.tool-call-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--vscode-terminal-foreground);
+}
+
+.tool-call-icon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.tool-call-name {
+    color: var(--vscode-terminal-ansiGreen);
+    font-size: 14px;
+}
+
+.tool-call-args {
+    margin-top: 8px;
+    padding: 8px;
+    background-color: var(--vscode-textCodeBlock-background);
+    border-radius: 4px;
+    border: 1px solid var(--vscode-input-border);
+}
+
+.tool-call-args pre {
+    margin: 0;
+    font-size: 12px;
+    color: var(--vscode-terminal-foreground);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
 /* .rovo-dev-send-button {} */
