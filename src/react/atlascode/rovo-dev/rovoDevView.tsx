@@ -4,30 +4,31 @@ import { useMessagingApi } from '../messagingApi';
 
 const RovoDevView: React.FC = () => {
     const [promptText, setPromptText] = useState('');
-    const [responseText, setResponseText] = useState('');
+    const [responseText, setResponseText] = useState(' ');
 
     const onMessageHandler = useCallback(
         (message: any): void => {
             switch (message.type) {
                 case 'response': {
-                    setResponseText(responseText + message.text);
+                    setResponseText((prevText) => prevText + message.text);
                     break;
                 }
             }
         },
-        [setResponseText, responseText],
+        [setResponseText],
     );
 
     const [postMessage] = useMessagingApi<any, any, any>(onMessageHandler);
 
     const sendPrompt = useCallback(
         (text: string): void => {
+            setResponseText('');
             postMessage({
                 type: 'prompt',
                 text,
             });
         },
-        [postMessage],
+        [postMessage, setResponseText],
     );
 
     return (
@@ -41,7 +42,7 @@ const RovoDevView: React.FC = () => {
 
             <br />
             <br />
-            <textarea readOnly={true} value={responseText} />
+            <textarea placeholder="...waiting for a response..." readOnly={true} value={responseText} />
         </div>
     );
 };
