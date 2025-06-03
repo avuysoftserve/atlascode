@@ -1,5 +1,5 @@
 import { isMinimalIssue, MinimalIssue, MinimalIssueOrKeyAndSite } from '@atlassianlabs/jira-pi-common-models';
-import { commands, env, ExtensionContext, Uri } from 'vscode';
+import { commands, env, ExtensionContext, Uri, window } from 'vscode';
 
 import {
     cloneRepositoryButtonEvent,
@@ -39,6 +39,16 @@ export function registerCommands(vscodeContext: ExtensionContext) {
                 subSection: ConfigSubSection.Issues,
             }),
         ),
+        commands.registerCommand(Commands.RovodevCommand, async () => {
+            window
+                .showInputBox({
+                    placeHolder: 'What do you want Rovodev-chan to do?',
+                    prompt: 'Type your command here',
+                })
+                .then((text) => {
+                    Container.rovodevWebviewProvder.invoke(text || '');
+                });
+        }),
         commands.registerCommand(Commands.ShowConfigPage, () =>
             Container.settingsWebviewFactory.createOrShow({
                 section: ConfigSection.Jira,

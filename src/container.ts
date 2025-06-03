@@ -71,6 +71,7 @@ export class Container {
     private static _commonMessageHandler: CommonActionMessageHandler;
     private static _bitbucketHelper: CheckoutHelper;
     private static _assignedWorkItemsView: AssignedWorkItemsViewProvider;
+    public static rovodevWebviewProvder: RovoDevWebviewProvider;
 
     static async initialize(context: ExtensionContext, config: IConfig, version: string) {
         const analyticsEnv: string = this.isDebugging ? 'staging' : 'prod';
@@ -200,7 +201,8 @@ export class Container {
 
         this._onboardingProvider = new OnboardingProvider();
 
-        context.subscriptions.push(new RovoDevWebviewProvider(context.extensionPath));
+        this.rovodevWebviewProvder = new RovoDevWebviewProvider(context.extensionPath);
+        context.subscriptions.push(this.rovodevWebviewProvder);
     }
 
     static focus() {

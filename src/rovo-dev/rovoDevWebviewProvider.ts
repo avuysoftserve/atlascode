@@ -59,14 +59,13 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
         this._webView.onDidReceiveMessage(async (e) => {
             switch (e.type) {
                 case 'prompt':
-                    await this.processPromptMessage(e);
+                    await this.processPromptMessage(e.text);
                     break;
             }
         });
     }
 
-    private async processPromptMessage(e: any) {
-        const message = e.text;
+    private async processPromptMessage(message: string) {
         const url = 'http://localhost:8899/v2/chat';
 
         const payload: FetchPayload = {
@@ -139,5 +138,21 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
         if (this._webView) {
             this._webView = undefined;
         }
+    }
+
+    async invoke(prompt: string): Promise<void> {
+        // Send something to the webview to display the user's prompt
+        if (!this._webView) {
+            console.error('Webview is not initialized.');
+            return;
+        }
+
+        await this._webView.postMessage({
+            type: 'invokeData',
+            prompt,
+        });
+
+        // Actually invoke the rovodev service, feed responses to the webview as normal
+        await this.processPromptMessage(prompt);
     }
 }

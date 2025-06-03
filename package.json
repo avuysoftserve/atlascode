@@ -78,6 +78,10 @@
     "contributes": {
         "commands": [
             {
+                "command": "atlascode.rovodev.bruh",
+                "title": "Ask rovodev"
+            },
+            {
                 "command": "atlascode.jira.todoIssue",
                 "title": "TO DO"
             },

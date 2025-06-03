@@ -15,6 +15,16 @@ const RovoDevView: React.FC = () => {
                     setResponseText((prevText) => prevText + message.text);
                     break;
                 }
+
+                case 'invokeData': {
+                    const prompt = message.prompt;
+                    setPromptText(prompt);
+                    break;
+                }
+
+                default:
+                    console.warn('Unknown message type:', message.type);
+                    break;
             }
         },
         [setResponseText],
@@ -57,6 +67,7 @@ const RovoDevView: React.FC = () => {
                     placeholder="What do you want AcraMini to do?"
                     onChange={(element) => setPromptText(element.target.value)}
                     onKeyDown={handleKeyDown}
+                    value={promptText}
                 />
                 <br />
                 <button className="rovo-dev-send-button" onClick={() => sendPrompt(promptText)} title="Send prompt">
