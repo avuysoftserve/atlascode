@@ -39,15 +39,20 @@ export function registerCommands(vscodeContext: ExtensionContext) {
                 subSection: ConfigSubSection.Issues,
             }),
         ),
-        commands.registerCommand(Commands.RovodevCommand, async () => {
+        commands.registerCommand(Commands.RovodevAsk, () => {
             window
                 .showInputBox({
                     placeHolder: 'Edit files in your workspace with Rovo Dev Agent',
                     prompt: 'Type your command here',
                 })
                 .then((text) => {
-                    Container.rovodevWebviewProvder.invoke(text || '');
+                    if (text?.trim()) {
+                        Container.rovodevWebviewProvder.invoke(text);
+                    }
                 });
+        }),
+        commands.registerCommand(Commands.RovodevNewSession, () => {
+            Container.rovodevWebviewProvder.reset();
         }),
         commands.registerCommand(Commands.ShowConfigPage, () =>
             Container.settingsWebviewFactory.createOrShow({

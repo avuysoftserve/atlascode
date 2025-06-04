@@ -78,8 +78,17 @@
     "contributes": {
         "commands": [
             {
-                "command": "atlascode.rovodev.bruh",
+                "command": "atlascode.rovodev.askRovoDev",
                 "title": "Ask rovodev"
+            },
+            {
+                "command": "atlascode.rovodev.newChatSession",
+                "title": "New chat session",
+                "icon": {
+                    "dark": "resources/dark/add.svg",
+                    "light": "resources/light/add.svg"
+                },
+                "category": "Atlassian"
             },
             {
                 "command": "atlascode.jira.todoIssue",
@@ -520,6 +529,11 @@
                 }
             ],
             "view/title": [
+                {
+                    "command": "atlascode.rovodev.newChatSession",
+                    "when": "view == atlascode.views.rovoDev.webView",
+                    "group": "navigation@1"
+                },
                 {
                     "command": "atlascode.jira.createIssue",
                     "when": "view =~ /(atlascode.views.jira.assignedWorkItemsTreeView)/ && atlascode:isJiraAuthenticated",

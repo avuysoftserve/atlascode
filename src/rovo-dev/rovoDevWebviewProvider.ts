@@ -104,7 +104,6 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
                 const { done, value } = await reader.read();
                 if (done) {
                     // Send final complete message when stream ends
-
                     await this._webView.postMessage({
                         type: 'completeMessage',
                     });
@@ -154,18 +153,28 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
         }
     }
 
-    async invoke(prompt: string): Promise<void> {
-        // Send something to the webview to display the user's prompt
+    async reset(): Promise<void> {
         if (!this._webView) {
             console.error('Webview is not initialized.');
             return;
         }
 
-        // This will populate the prompt field
-        await this._webView.postMessage({
-            type: 'invokeData',
-            prompt,
-        });
+        try {
+            await fetch('http://localhost:8899/v2/reset', {
+                method: 'POST',
+            });
+        } finally {
+            await this._webView.postMessage({
+                type: 'newSession',
+            });
+        }
+    }
+
+    async invoke(prompt: string): Promise<void> {
+        if (!this._webView) {
+            console.error('Webview is not initialized.');
+            return;
+        }
 
         // Actually invoke the rovodev service, feed responses to the webview as normal
         await this.processPromptMessage(prompt);

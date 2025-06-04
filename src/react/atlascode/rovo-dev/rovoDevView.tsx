@@ -18,29 +18,40 @@ const RovoDevView: React.FC = () => {
         }
     }, [chatHistory, currentResponse]);
 
+    const appendCurrentResponse = useCallback(
+        (text) => {
+            if (text) {
+                setCurrentResponse((currentText) => {
+                    if (!currentText || !currentText.trim() || currentText === '...') {
+                        return text;
+                    } else {
+                        return currentText + text;
+                    }
+                });
+            }
+        },
+        [setCurrentResponse],
+    );
+
     const handleResponse = useCallback(
         (data: FetchResponseData) => {
             console.log('Received response data:', data);
             switch (data.part_kind) {
                 case 'text-chunk':
-                    setCurrentResponse((prevText) => prevText + (data.content || ''));
+                    appendCurrentResponse(data.content || '');
                     break;
                 case 'tool-call':
-                    setCurrentResponse(
-                        (prevText) => prevText + `\n\n<TOOL_CALL>${data.tool_name}@@@@${data.args}</TOOL_CALL>\n\n`,
-                    );
+                    appendCurrentResponse(`\n\n<TOOL_CALL>${data.tool_name}@@@@${data.args}</TOOL_CALL>\n\n`);
                     break;
                 case 'tool-return':
-                    setCurrentResponse(
-                        (prevText) => prevText + `\n\nTool return: ${data.tool_name} -> ${data.content}\n\n`,
-                    );
+                    appendCurrentResponse(`\n\nTool return: ${data.tool_name} -> ${data.content}\n\n`);
                     break;
                 default:
-                    setCurrentResponse((prevText) => prevText + `\n\nUnknown part_kind: ${data.part_kind}\n\n`);
+                    appendCurrentResponse(`\n\nUnknown part_kind: ${data.part_kind}\n\n`);
                     break;
             }
         },
-        [setCurrentResponse],
+        [appendCurrentResponse],
     );
 
     const onMessageHandler = useCallback(
@@ -51,6 +62,7 @@ const RovoDevView: React.FC = () => {
                     handleResponse(data);
                     break;
                 }
+
                 case 'userChatMessage': {
                     setChatHistory((prev) => [...prev, event.message]);
                     break;
@@ -72,13 +84,13 @@ const RovoDevView: React.FC = () => {
 
                 case 'errorMessage': {
                     setChatHistory((prev) => [...prev, event.message]);
+                    setCurrentResponse('');
                     setSendButtonDisabled(false);
                     break;
                 }
 
-                case 'invokeData': {
-                    const prompt = event.prompt;
-                    setPromptText(prompt);
+                case 'newSession': {
+                    setChatHistory([]);
                     break;
                 }
 
@@ -87,7 +99,7 @@ const RovoDevView: React.FC = () => {
                     break;
             }
         },
-        [handleResponse, currentResponse],
+        [handleResponse, setCurrentResponse, currentResponse],
     );
 
     const [postMessage] = useMessagingApi<any, any, any>(onMessageHandler);
@@ -97,6 +109,8 @@ const RovoDevView: React.FC = () => {
             if (sendButtonDisabled) {
                 return;
             }
+
+            setCurrentResponse('...');
 
             // Disable the send button
             setSendButtonDisabled(true);
@@ -110,7 +124,7 @@ const RovoDevView: React.FC = () => {
             // Clear the input field
             setPromptText('');
         },
-        [postMessage, sendButtonDisabled, setSendButtonDisabled],
+        [postMessage, setCurrentResponse, sendButtonDisabled, setSendButtonDisabled],
     );
 
     const handleKeyDown = useCallback(
