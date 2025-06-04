@@ -134,14 +134,6 @@ const RovoDevView: React.FC = () => {
                 const toolCallContent = part.replace(/^<TOOL_CALL>/, '').replace(/<\/TOOL_CALL>$/, '');
                 const [toolName, argsStr] = toolCallContent.split('@@@@');
 
-                // let formattedArgs = '';
-                // try {
-                //     const args = JSON.parse(argsStr || '{}');
-                //     formattedArgs = Object.keys(args).length > 0 ? JSON.stringify(args, null, 2) : '';
-                // } catch {
-                //     formattedArgs = argsStr || '';
-                // }
-
                 return (
                     <div key={index} style={styles.toolCallBubbleStyles}>
                         <div style={styles.toolCallHeaderStyles}>
@@ -168,7 +160,12 @@ const RovoDevView: React.FC = () => {
             message.author.toLowerCase() === 'user' ? styles.userMessageStyles : styles.agentMessageStyles;
         return (
             <div key={index} style={{ ...styles.chatMessageStyles, ...messageTypeStyles }}>
-                <div style={styles.messageAuthorStyles}>{message.author}</div>
+                <div style={styles.messageHeaderStyles}>
+                    <span style={styles.messageAuthorStyles}>{message.author}</span>
+                    <span style={styles.messageTimestampStyles}>
+                        {new Date(message.timestamp).toLocaleTimeString()}
+                    </span>
+                </div>
                 <div style={styles.messageContentStyles}>{renderMessageContent(message.text)}</div>
             </div>
         );
@@ -188,7 +185,10 @@ const RovoDevView: React.FC = () => {
                             ...styles.streamingMessageStyles,
                         }}
                     >
-                        <div style={styles.messageAuthorStyles}>Agent</div>
+                        <div style={styles.messageHeaderStyles}>
+                            <span style={styles.messageAuthorStyles}>Agent</span>
+                            <span style={styles.messageTimestampStyles}>{new Date().toLocaleTimeString()}</span>
+                        </div>
                         <div style={styles.messageContentStyles}>{renderMessageContent(currentResponse)}</div>
                     </div>
                 )}

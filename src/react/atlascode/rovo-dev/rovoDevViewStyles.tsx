@@ -70,11 +70,23 @@ export const streamingMessageStyles: React.CSSProperties = {
     border: '1px dashed var(--vscode-activityBarBadge-background)',
 };
 
+export const messageHeaderStyles: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '8px',
+};
+
 export const messageAuthorStyles: React.CSSProperties = {
     fontWeight: 'bold',
-    marginBottom: '8px',
     color: 'var(--vscode-editor-foreground)',
     opacity: 0.8,
+};
+
+export const messageTimestampStyles: React.CSSProperties = {
+    fontSize: '12px',
+    color: 'var(--vscode-editor-foreground)',
+    opacity: 0.6,
 };
 
 export const messageContentStyles: React.CSSProperties = {
