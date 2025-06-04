@@ -1,9 +1,8 @@
-import './RovoDev.css';
-
 import React, { useCallback, useState } from 'react';
 import { ChatMessage, FetchResponseData } from 'src/rovo-dev/utils';
 
 import { useMessagingApi } from '../messagingApi';
+import * as styles from './rovoDevViewStyles';
 
 const RovoDevView: React.FC = () => {
     const [sendButtonDisabled, setSendButtonDisabled] = useState(false);
@@ -144,14 +143,14 @@ const RovoDevView: React.FC = () => {
                 // }
 
                 return (
-                    <div key={index} className="tool-call-bubble">
-                        <div className="tool-call-header">
-                            <span className="tool-call-icon">🔧</span>
-                            <span className="tool-call-name">{toolName}</span>
+                    <div key={index} style={styles.toolCallBubbleStyles}>
+                        <div style={styles.toolCallHeaderStyles}>
+                            <span style={styles.toolCallIconStyles}>🔧</span>
+                            <span style={styles.toolCallNameStyles}>{toolName}</span>
                         </div>
                         {argsStr && (
-                            <div className="tool-call-args">
-                                <pre>{argsStr}</pre>
+                            <div style={styles.toolCallArgsStyles}>
+                                <pre style={styles.toolCallArgsPreStyles}>{argsStr}</pre>
                             </div>
                         )}
                     </div>
@@ -165,44 +164,47 @@ const RovoDevView: React.FC = () => {
 
     // Render chat message
     const renderChatMessage = (message: ChatMessage, index: number) => {
+        const messageTypeStyles =
+            message.author.toLowerCase() === 'user' ? styles.userMessageStyles : styles.agentMessageStyles;
         return (
-            <div key={index} className={`chat-message ${message.author.toLowerCase()}-message`}>
-                <div className="message-author">{message.author}</div>
-                <div className="message-content">{renderMessageContent(message.text)}</div>
+            <div key={index} style={{ ...styles.chatMessageStyles, ...messageTypeStyles }}>
+                <div style={styles.messageAuthorStyles}>{message.author}</div>
+                <div style={styles.messageContentStyles}>{renderMessageContent(message.text)}</div>
             </div>
         );
     };
 
     return (
-        <div className="rovo-dev-container">
-            <div className="chat-messages-container">
+        <div style={styles.rovoDevContainerStyles}>
+            <div style={styles.chatMessagesContainerStyles}>
                 {chatHistory.map((msg, index) => renderChatMessage(msg, index))}
 
                 {/* Show streaming response if available */}
                 {currentResponse && (
-                    <div className="chat-message agent-message streaming-message">
-                        <div className="message-author">Agent</div>
-                        <div className="message-content">{renderMessageContent(currentResponse)}</div>
+                    <div
+                        style={{
+                            ...styles.chatMessageStyles,
+                            ...styles.agentMessageStyles,
+                            ...styles.streamingMessageStyles,
+                        }}
+                    >
+                        <div style={styles.messageAuthorStyles}>Agent</div>
+                        <div style={styles.messageContentStyles}>{renderMessageContent(currentResponse)}</div>
                     </div>
                 )}
                 <div ref={chatEndRef} />
             </div>
 
-            <div className="rovo-dev-prompt-container">
+            <div style={styles.rovoDevPromptContainerStyles}>
                 <textarea
-                    className="rovo-dev-textarea"
+                    style={styles.rovoDevTextareaStyles}
                     placeholder="Edit files in your workspace with Rovo Dev Agent"
                     onChange={(element) => setPromptText(element.target.value)}
                     onKeyDown={handleKeyDown}
                     value={promptText}
                 />
                 <br />
-                <button
-                    className="rovo-dev-send-button"
-                    onClick={() => sendPrompt(promptText)}
-                    title="Send prompt"
-                    disabled={sendButtonDisabled}
-                >
+                <button onClick={() => sendPrompt(promptText)} title="Send prompt" disabled={sendButtonDisabled}>
                     Send
                 </button>
             </div>
