@@ -3,12 +3,15 @@ import { getHtmlForView } from 'src/webview/common/getHtmlForView';
 import {
     CancellationToken,
     Disposable,
+    Position,
+    Range,
     Uri,
     Webview,
     WebviewView,
     WebviewViewProvider,
     WebviewViewResolveContext,
     window,
+    workspace,
 } from 'vscode';
 
 import { FetchPayload, FetchResponseData } from './utils';
@@ -55,6 +58,47 @@ export class RovoDevWebviewProvider extends Disposable implements WebviewViewPro
             switch (e.type) {
                 case 'prompt':
                     await this.processPromptMessage(e.text);
+                    break;
+                case 'openFile':
+                    try {
+                        const filePath: string = e.filePath;
+                        let range: Range | undefined;
+                        if (e.range && Array.isArray(e.range)) {
+                            const startPosition = new Position(e.range[0], 0);
+                            const endPosition = new Position(e.range[1], 0);
+                            range = e.range ? new Range(startPosition, endPosition) : undefined;
+                        }
+                        // Get workspace root and resolve the file path
+                        let resolvedPath: string;
+
+                        if (path.isAbsolute(filePath)) {
+                            // If already absolute, use as-is
+                            resolvedPath = filePath;
+                        } else {
+                            // If relative, resolve against workspace root
+                            const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath;
+                            if (!workspaceRoot) {
+                                throw new Error('No workspace folder found');
+                            }
+                            resolvedPath = path.join(workspaceRoot, filePath);
+                        }
+
+                        const fileUri = Uri.file(resolvedPath);
+
+                        await window.showTextDocument(fileUri, {
+                            selection: range || undefined,
+                        });
+                    } catch (error) {
+                        console.error('Error opening file:', error);
+                        await this._webView?.postMessage({
+                            type: 'errorMessage',
+                            message: {
+                                text: `Error: ${error.message}`,
+                                author: 'Agent',
+                                timestamp: Date.now(),
+                            },
+                        });
+                    }
                     break;
             }
         });

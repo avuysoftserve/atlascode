@@ -96,14 +96,11 @@ export const messageContentStyles: React.CSSProperties = {
 };
 
 export const toolCallBubbleStyles: React.CSSProperties = {
-    margin: '8px 0',
-    padding: '12px',
-    border: '2px solid var(--vscode-terminal-border)',
-    borderLeft: '4px solid var(--vscode-terminal-ansiGreen)',
-    borderRadius: '6px',
-    backgroundColor: 'var(--vscode-terminal-background)',
-    fontFamily:
-        "'SFMono-Medium', 'SF Mono', 'Segoe UI Mono', 'Roboto Mono', 'Ubuntu Mono', Menlo, Consolas, Courier, monospace",
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '4px',
 };
 
 export const toolCallHeaderStyles: React.CSSProperties = {
@@ -125,9 +122,9 @@ export const toolCallNameStyles: React.CSSProperties = {
 };
 
 export const toolCallArgsStyles: React.CSSProperties = {
-    marginTop: '8px',
     padding: '8px',
-    backgroundColor: 'var(--vscode-textCodeBlock-background)',
+    alignItems: 'center',
+    backgroundColor: 'inherit',
     borderRadius: '4px',
     border: '1px solid var(--vscode-input-border)',
 };

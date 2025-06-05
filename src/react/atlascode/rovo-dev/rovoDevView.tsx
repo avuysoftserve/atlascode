@@ -1,3 +1,4 @@
+import CodeIcon from '@atlaskit/icon/glyph/code';
 import React, { useCallback, useState } from 'react';
 import { ChatMessage, FetchResponseData } from 'src/rovo-dev/utils';
 
@@ -126,6 +127,17 @@ const RovoDevView: React.FC = () => {
         },
         [postMessage, setCurrentResponse, sendButtonDisabled, setSendButtonDisabled],
     );
+    const openFile = useCallback(
+        (filePath: string, range?: any[]) => {
+            // Implement file opening logic here
+            postMessage({
+                type: 'openFile',
+                filePath,
+                range,
+            });
+        },
+        [postMessage],
+    );
 
     const handleKeyDown = useCallback(
         (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -150,15 +162,8 @@ const RovoDevView: React.FC = () => {
 
                 return (
                     <div key={index} style={styles.toolCallBubbleStyles}>
-                        <div style={styles.toolCallHeaderStyles}>
-                            <span style={styles.toolCallIconStyles}>🔧</span>
-                            <span style={styles.toolCallNameStyles}>{toolName}</span>
-                        </div>
-                        {argsStr && (
-                            <div style={styles.toolCallArgsStyles}>
-                                <pre style={styles.toolCallArgsPreStyles}>{argsStr}</pre>
-                            </div>
-                        )}
+                        <CodeIcon label="Tool Call" />
+                        <div style={styles.toolCallArgsStyles}>{handleToolCallArgs(toolName, argsStr)}</div>
                     </div>
                 );
             } else {
@@ -167,6 +172,70 @@ const RovoDevView: React.FC = () => {
             }
         });
     };
+
+    const handleToolCallArgs = useCallback(
+        (toolName: string, args: string) => {
+            console.log('Handling tool call args:', toolName, args);
+            try {
+                switch (toolName) {
+                    case 'open_files':
+                        const openFilesObj = JSON.parse(args);
+
+                        if (openFilesObj.file_paths) {
+                            return openFilesObj.file_paths.map((filePath: string) => {
+                                return (
+                                    <>
+                                        Open file{' '}
+                                        <a onClick={() => openFile(filePath)} key={filePath}>
+                                            {filePath}
+                                        </a>
+                                    </>
+                                );
+                            });
+                        }
+                        break;
+
+                    case 'expand_code_chunks':
+                        const expandCodeObj = JSON.parse(args);
+                        if (!expandCodeObj.file_path) {
+                            return;
+                        }
+                        console.log('Expand code object:', expandCodeObj);
+                        if (expandCodeObj.line_ranges) {
+                            const lineRanges = expandCodeObj.line_ranges;
+                            return lineRanges.map((lineRange: any[]) => {
+                                return (
+                                    <>
+                                        Expand code chunks in{' '}
+                                        <a
+                                            onClick={() => openFile(expandCodeObj.file_path, lineRange)}
+                                            key={expandCodeObj.file_path}
+                                        >
+                                            {`${expandCodeObj.file_path} lines ${lineRange[0]}-${lineRange[1]}`}
+                                        </a>
+                                    </>
+                                );
+                            });
+                        } else {
+                            return (
+                                <>
+                                    Expand code chunks in{' '}
+                                    <a onClick={() => openFile(expandCodeObj.file_path)} key={expandCodeObj.file_path}>
+                                        {expandCodeObj.file_path}
+                                    </a>
+                                </>
+                            );
+                        }
+                    default:
+                        return <pre style={styles.toolCallArgsPreStyles}>{args}</pre>;
+                }
+            } catch (error) {
+                console.error('Error formatting tool call args:', error);
+                return String(args);
+            }
+        },
+        [openFile],
+    );
 
     // Render chat message
     const renderChatMessage = (message: ChatMessage, index: number) => {
