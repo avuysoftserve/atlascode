@@ -126,7 +126,7 @@ export const toolCallArgsStyles: React.CSSProperties = {
     alignItems: 'center',
     backgroundColor: 'inherit',
     borderRadius: '4px',
-    border: '1px solid var(--vscode-input-border)',
+    border: '1px solid var(--vscode-editor-foreground)',
 };
 
 export const toolCallArgsPreStyles: React.CSSProperties = {
