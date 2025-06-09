@@ -415,6 +415,8 @@ export default class JiraIssuePage extends AbstractIssueEditorPage<Emit, Accept,
 
     getMainPanelNavMarkup(): any {
         const itIconUrl = this.state.fieldValues['issuetype'] ? this.state.fieldValues['issuetype'].iconUrl : undefined;
+        const isTopLevel = ['Epic', 'Initiative', 'Project'].includes(this.state.fieldValues['issuetype']?.name);
+        const hasNoParent = !this.state.fieldValues['parent'];
 
         return (
             <div>
@@ -431,23 +433,37 @@ export default class JiraIssuePage extends AbstractIssueEditorPage<Emit, Accept,
                     <div className="ac-breadcrumbs">
                         {this.state.hierarchy && this.state.hierarchy.length > 0 && (
                             <>
-                                {this.state.hierarchy.map((issue, index) => (
-                                    <React.Fragment key={issue.key}>
-                                        <NavItem
-                                            text={issue.key}
-                                            iconUrl={issue.issuetype?.iconUrl}
-                                            onItemClick={() =>
-                                                this.handleOpenIssue({
-                                                    siteDetails: this.state.siteDetails,
-                                                    key: issue.key,
-                                                })
-                                            }
-                                        />
-                                        {index < this.state.hierarchy.length - 1 && (
-                                            <span className="ac-breadcrumb-divider">/</span>
-                                        )}
-                                    </React.Fragment>
-                                ))}
+                                {this.state.hierarchy.map((issue, index) => {
+                                    const isLastItem = index === this.state.hierarchy.length - 1;
+                                    const shouldOpenInJira = isLastItem && (isTopLevel || hasNoParent);
+
+                                    return (
+                                        <React.Fragment key={issue.key}>
+                                            <NavItem
+                                                text={issue.key}
+                                                iconUrl={issue.issuetype?.iconUrl}
+                                                href={
+                                                    shouldOpenInJira
+                                                        ? `${this.state.siteDetails.baseLinkUrl}/browse/${issue.key}`
+                                                        : undefined
+                                                }
+                                                onItemClick={
+                                                    !shouldOpenInJira
+                                                        ? () =>
+                                                              this.handleOpenIssue({
+                                                                  siteDetails: this.state.siteDetails,
+                                                                  key: issue.key,
+                                                              })
+                                                        : undefined
+                                                }
+                                                onCopy={() => this.handleCopyIssueLink()}
+                                            />
+                                            {index < this.state.hierarchy.length - 1 && (
+                                                <span className="ac-breadcrumb-divider">/</span>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
                                 {!this.state.hierarchy.some((issue) => issue.key === this.state.key) && (
                                     <>
                                         <span className="ac-breadcrumb-divider">/</span>
