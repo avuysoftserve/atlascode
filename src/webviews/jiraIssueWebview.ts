@@ -44,6 +44,7 @@ import { isOpenPullRequest } from '../ipc/prActions';
 import { fetchEditIssueUI, fetchMinimalIssue } from '../jira/fetchIssue';
 import { parseJiraIssueKeys } from '../jira/issueKeyParser';
 import { transitionIssue } from '../jira/transitionIssue';
+import { TOP_LEVEL_ISSUE_TYPES } from '../lib/jira/constants';
 import { Logger } from '../logger';
 import { iconSet, Resources } from '../resources';
 import { getJiraIssueUri } from '../views/jira/treeViews/utils';
@@ -1045,7 +1046,7 @@ export class JiraIssueWebview
                                 const parentType = parentDetails.fields.issuetype?.name;
 
                                 // Check if this parent is a top-level issue type
-                                const isTopLevel = ['Epic', 'Initiative', 'Project'].includes(parentType);
+                                const isTopLevel = TOP_LEVEL_ISSUE_TYPES.includes(parentType);
 
                                 if (isTopLevel) {
                                     return;
@@ -1074,7 +1075,7 @@ export class JiraIssueWebview
             if (!processedKeys.has(currentIssue.key)) {
                 const currentIssueDetails = await client.getIssue(currentIssue.key, ['issuetype']);
                 const currentIssueType = currentIssueDetails?.fields?.issuetype?.name;
-                const isTopLevel = ['Epic', 'Initiative', 'Project'].includes(currentIssueType);
+                const isTopLevel = TOP_LEVEL_ISSUE_TYPES.includes(currentIssueType);
 
                 if (!isTopLevel) {
                     hierarchyIssues.push(currentIssue);

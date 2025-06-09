@@ -12,6 +12,7 @@ import { AnalyticsView } from '../../../../analyticsTypes';
 import { EditIssueAction, IssueCommentAction } from '../../../../ipc/issueActions';
 import { EditIssueData, emptyEditIssueData, isIssueCreated } from '../../../../ipc/issueMessaging';
 import { LegacyPMFData } from '../../../../ipc/messaging';
+import { TOP_LEVEL_ISSUE_TYPES } from '../../../../lib/jira/constants';
 import { AtlascodeErrorBoundary } from '../../../../react/atlascode/common/ErrorBoundary';
 import { readFilesContentAsync } from '../../../../util/files';
 import { ConnectionTimeout } from '../../../../util/time';
@@ -415,7 +416,7 @@ export default class JiraIssuePage extends AbstractIssueEditorPage<Emit, Accept,
 
     getMainPanelNavMarkup(): any {
         const itIconUrl = this.state.fieldValues['issuetype'] ? this.state.fieldValues['issuetype'].iconUrl : undefined;
-        const isTopLevel = ['Epic', 'Initiative', 'Project'].includes(this.state.fieldValues['issuetype']?.name);
+        const isTopLevel = TOP_LEVEL_ISSUE_TYPES.includes(this.state.fieldValues['issuetype']?.name);
         const hasNoParent = !this.state.fieldValues['parent'];
 
         return (
