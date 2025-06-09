@@ -443,21 +443,29 @@ export default class JiraIssuePage extends AbstractIssueEditorPage<Emit, Accept,
                                                 })
                                             }
                                         />
-                                        <span className="ac-breadcrumb-divider">/</span>
+                                        {index < this.state.hierarchy.length - 1 && (
+                                            <span className="ac-breadcrumb-divider">/</span>
+                                        )}
                                     </React.Fragment>
                                 ))}
-                                <Tooltip
-                                    content={`Created on ${
-                                        this.state.fieldValues['created.rendered'] || this.state.fieldValues['created']
-                                    }`}
-                                >
-                                    <NavItem
-                                        text={`${this.state.key}`}
-                                        href={`${this.state.siteDetails.baseLinkUrl}/browse/${this.state.key}`}
-                                        iconUrl={itIconUrl}
-                                        onCopy={this.handleCopyIssueLink}
-                                    />
-                                </Tooltip>
+                                {!this.state.hierarchy.some((issue) => issue.key === this.state.key) && (
+                                    <>
+                                        <span className="ac-breadcrumb-divider">/</span>
+                                        <Tooltip
+                                            content={`Created on ${
+                                                this.state.fieldValues['created.rendered'] ||
+                                                this.state.fieldValues['created']
+                                            }`}
+                                        >
+                                            <NavItem
+                                                text={`${this.state.key}`}
+                                                href={`${this.state.siteDetails.baseLinkUrl}/browse/${this.state.key}`}
+                                                iconUrl={itIconUrl}
+                                                onCopy={this.handleCopyIssueLink}
+                                            />
+                                        </Tooltip>
+                                    </>
+                                )}
                             </>
                         )}
                         {(!this.state.hierarchy || this.state.hierarchy.length === 0) && (

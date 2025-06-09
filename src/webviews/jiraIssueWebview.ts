@@ -1044,7 +1044,7 @@ export class JiraIssueWebview
                             if (parentDetails?.fields) {
                                 const parentType = parentDetails.fields.issuetype?.name;
 
-                                // ??? Check if this parent is a top-level issue type
+                                // Check if this parent is a top-level issue type
                                 const isTopLevel = ['Epic', 'Initiative', 'Project'].includes(parentType);
 
                                 if (isTopLevel) {
@@ -1069,9 +1069,16 @@ export class JiraIssueWebview
             // Start traversing up the hierarchy from the current issue
             await fetchParentChain(currentIssue);
 
-            // Add the current issue to the hierarchy if it's not already there
+            // Only add the current issue if it's not already in the hierarchy
+            // and if it's not a top-level issue type
             if (!processedKeys.has(currentIssue.key)) {
-                hierarchyIssues.push(currentIssue);
+                const currentIssueDetails = await client.getIssue(currentIssue.key, ['issuetype']);
+                const currentIssueType = currentIssueDetails?.fields?.issuetype?.name;
+                const isTopLevel = ['Epic', 'Initiative', 'Project'].includes(currentIssueType);
+
+                if (!isTopLevel) {
+                    hierarchyIssues.push(currentIssue);
+                }
             }
 
             if (hierarchyIssues.length === 0) {
