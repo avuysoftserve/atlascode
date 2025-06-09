@@ -120,6 +120,8 @@ export class JiraIssueWebview
             if (refetchMinimalIssue) {
                 this._issue = await fetchMinimalIssue(this._issue.key, this._issue.siteDetails);
             }
+            const client = await Container.clientManager.jiraClient(this._issue.siteDetails);
+            const hierarchy = await this.fetchIssueHierarchy(this._issue.key, this._issue.siteDetails, client);
             const editUI: EditIssueUI<DetailedSiteInfo> = await fetchEditIssueUI(this._issue);
 
             if (this._panel) {
@@ -137,14 +139,21 @@ export class JiraIssueWebview
             // msg.workInProgress = this._issue.assignee.accountId === this._currentUserId &&
             //     issue.transitions.find(t => t.isInitial && t.to.id === issue.status.id) === undefined &&
             //     currentBranches.find(b => b.toLowerCase().indexOf(issue.key.toLowerCase()) !== -1) !== undefined;
+            // Sort hierarchy by key to ensure consistent order
+            hierarchy.sort((a, b) => a.key.localeCompare(b.key));
 
+            this._editUIData = editUI as EditIssueData;
             this._editUIData.recentPullRequests = [];
             this._editUIData.currentUser = emptyUser;
+            this._editUIData.hierarchy = hierarchy;
 
-            const msg = this._editUIData;
+            const msg = {
+                ...this._editUIData,
+                type: 'update',
+                hierarchy: hierarchy, // Explicitly include hierarchy in the message
+            };
 
-            msg.type = 'update';
-
+            console.log('[HIERARCHY] Sending update message with hierarchy:', hierarchy);
             this.postMessage(msg);
 
             // call async-able update functions here
@@ -984,5 +993,103 @@ export class JiraIssueWebview
         );
 
         return relatedPrs.filter((pr) => pr !== undefined).map((p) => p!.data);
+    }
+
+    private async fetchIssueHierarchy(
+        issueKey: string,
+        siteDetails: DetailedSiteInfo,
+        client: any,
+    ): Promise<MinimalIssue<DetailedSiteInfo>[]> {
+        let currentIssue: MinimalIssue<DetailedSiteInfo> | undefined;
+        try {
+            // Get the current issue with minimal fields
+            currentIssue = await fetchMinimalIssue(issueKey, siteDetails);
+            if (!currentIssue) {
+                Logger.error(new Error(`Failed to get current issue ${issueKey}`));
+                throw new Error(`Failed to get current issue ${issueKey}`);
+            }
+
+            // Array to store all issues in hierarchy
+            const hierarchyIssues: MinimalIssue<DetailedSiteInfo>[] = [];
+            const processedKeys = new Set<string>();
+
+            // Function to recursively fetch parent issues
+            const fetchParentChain = async (issue: MinimalIssue<DetailedSiteInfo>): Promise<void> => {
+                try {
+                    if (processedKeys.has(issue.key)) {
+                        return;
+                    }
+                    processedKeys.add(issue.key);
+
+                    // Get issue details with minimal fields
+                    const fields = ['parent', 'issuetype'];
+                    const issueDetails = await client.getIssue(issue.key, fields);
+                    if (!issueDetails || !issueDetails.fields) {
+                        Logger.error(new Error(`Invalid response for ${issue.key}`));
+                        return;
+                    }
+
+                    // Check if this issue has a parent
+                    if (issueDetails.fields.parent) {
+                        const parentKey = issueDetails.fields.parent.key;
+
+                        // Fetch the parent issue
+                        const parentIssue = await fetchMinimalIssue(parentKey, siteDetails);
+                        if (parentIssue) {
+                            // Add parent to hierarchy at the beginning (since we want top-level first)
+                            hierarchyIssues.unshift(parentIssue);
+
+                            // Get parent's details to check its type and parent
+                            const parentDetails = await client.getIssue(parentKey, fields);
+                            if (parentDetails?.fields) {
+                                const parentType = parentDetails.fields.issuetype?.name;
+
+                                // ??? Check if this parent is a top-level issue type
+                                const isTopLevel = ['Epic', 'Initiative', 'Project'].includes(parentType);
+
+                                if (isTopLevel) {
+                                    return;
+                                }
+
+                                // If parent has its own parent, continue traversing
+                                if (parentDetails.fields.parent) {
+                                    await fetchParentChain(parentIssue);
+                                }
+                            }
+                        } else {
+                            Logger.error(new Error(`Failed to fetch parent issue ${parentKey}`));
+                        }
+                    }
+                } catch (e) {
+                    Logger.error(e, `Error fetching parent for ${issue.key}`);
+                    // Continue even if we can't get parent details
+                }
+            };
+
+            // Start traversing up the hierarchy from the current issue
+            await fetchParentChain(currentIssue);
+
+            // Add the current issue to the hierarchy if it's not already there
+            if (!processedKeys.has(currentIssue.key)) {
+                hierarchyIssues.push(currentIssue);
+            }
+
+            if (hierarchyIssues.length === 0) {
+                Logger.error(new Error(`No valid issues found in hierarchy`));
+                throw new Error(`No valid issues found in hierarchy`);
+            }
+
+            // Send the hierarchy to the webview
+            this.postMessage({
+                type: 'update',
+                hierarchy: hierarchyIssues,
+            });
+
+            return hierarchyIssues;
+        } catch (e) {
+            Logger.error(e, `Error fetching hierarchy for ${issueKey}`);
+            // Return at least the current issue if we can't get the full hierarchy
+            return currentIssue ? [currentIssue] : [];
+        }
     }
 }
