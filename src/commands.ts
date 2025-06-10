@@ -14,7 +14,7 @@ import { rerunPipeline } from './commands/bitbucket/rerunPipeline';
 import { runPipeline } from './commands/bitbucket/runPipeline';
 import { assignIssue } from './commands/jira/assignIssue';
 import { createIssue } from './commands/jira/createIssue';
-import { showIssue, showIssueForKey, showIssueForSiteIdAndKey } from './commands/jira/showIssue';
+import { showIssue, showIssueForKey, showIssueForSiteIdAndKey, showIssueForURL } from './commands/jira/showIssue';
 import { startWorkOnIssue } from './commands/jira/startWorkOnIssue';
 import { configuration } from './config/configuration';
 import { Commands, HelpTreeViewId } from './constants';
@@ -117,6 +117,7 @@ export function registerCommands(vscodeContext: ExtensionContext) {
             Commands.ShowIssueForSiteIdAndKey,
             async (siteId: string, issueKey: string) => await showIssueForSiteIdAndKey(siteId, issueKey),
         ),
+        commands.registerCommand(Commands.ShowIssueForURL, async (issueURL: string) => await showIssueForURL(issueURL)),
         commands.registerCommand(Commands.ToDoIssue, (issueNode) =>
             commands.executeCommand(Commands.ShowIssue, issueNode.issue),
         ),
