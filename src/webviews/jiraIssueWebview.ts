@@ -1079,8 +1079,9 @@ export class JiraIssueWebview
             }
 
             if (hierarchyIssues.length === 0) {
-                Logger.error(new Error(`No valid issues found in hierarchy`));
-                throw new Error(`No valid issues found in hierarchy`);
+                const error = new Error(`No valid issues found in hierarchy`);
+                Logger.error(error);
+                throw error;
             }
 
             // Send the hierarchy to the webview

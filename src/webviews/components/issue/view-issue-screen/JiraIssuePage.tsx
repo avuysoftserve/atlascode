@@ -457,7 +457,7 @@ export default class JiraIssuePage extends AbstractIssueEditorPage<Emit, Accept,
                                                               })
                                                         : undefined
                                                 }
-                                                onCopy={() => this.handleCopyIssueLink()}
+                                                onCopy={this.handleCopyIssueLink}
                                             />
                                             <span className="ac-breadcrumb-divider">/</span>
                                         </React.Fragment>
