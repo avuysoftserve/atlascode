@@ -437,6 +437,13 @@ export default class JiraIssuePage extends AbstractIssueEditorPage<Emit, Accept,
                                 {this.state.hierarchy.map((issue, index) => {
                                     const isLastItem = index === this.state.hierarchy.length - 1;
                                     const shouldOpenInJira = isLastItem && (isTopLevel || hasNoParent);
+                                    const handleItemClick = !shouldOpenInJira
+                                        ? () =>
+                                              this.handleOpenIssue({
+                                                  siteDetails: this.state.siteDetails,
+                                                  key: issue.key,
+                                              })
+                                        : undefined;
 
                                     return (
                                         <React.Fragment key={issue.key}>
@@ -448,15 +455,7 @@ export default class JiraIssuePage extends AbstractIssueEditorPage<Emit, Accept,
                                                         ? `${this.state.siteDetails.baseLinkUrl}/browse/${issue.key}`
                                                         : undefined
                                                 }
-                                                onItemClick={
-                                                    !shouldOpenInJira
-                                                        ? () =>
-                                                              this.handleOpenIssue({
-                                                                  siteDetails: this.state.siteDetails,
-                                                                  key: issue.key,
-                                                              })
-                                                        : undefined
-                                                }
+                                                onItemClick={handleItemClick}
                                                 onCopy={this.handleCopyIssueLink}
                                             />
                                             <span className="ac-breadcrumb-divider">/</span>
