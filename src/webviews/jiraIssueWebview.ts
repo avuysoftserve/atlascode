@@ -143,7 +143,6 @@ export class JiraIssueWebview
             // Sort hierarchy by key to ensure consistent order
             hierarchy.sort((a, b) => a.key.localeCompare(b.key));
 
-            this._editUIData = editUI as EditIssueData;
             this._editUIData.recentPullRequests = [];
             this._editUIData.currentUser = emptyUser;
             this._editUIData.hierarchy = hierarchy;
