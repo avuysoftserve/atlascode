@@ -1045,9 +1045,7 @@ export class JiraIssueWebview
                                 const parentType = parentDetails.fields.issuetype?.name;
 
                                 // Check if this parent is a top-level issue type
-                                const isTopLevel = TOP_LEVEL_ISSUE_TYPES.includes(parentType);
-
-                                if (isTopLevel) {
+                                if (TOP_LEVEL_ISSUE_TYPES.includes(parentType)) {
                                     return;
                                 }
 
@@ -1074,9 +1072,8 @@ export class JiraIssueWebview
             if (!processedKeys.has(currentIssue.key)) {
                 const currentIssueDetails = await client.getIssue(currentIssue.key, ['issuetype']);
                 const currentIssueType = currentIssueDetails?.fields?.issuetype?.name;
-                const isTopLevel = TOP_LEVEL_ISSUE_TYPES.includes(currentIssueType);
 
-                if (!isTopLevel) {
+                if (!TOP_LEVEL_ISSUE_TYPES.includes(currentIssueType)) {
                     hierarchyIssues.push(currentIssue);
                 }
             }
