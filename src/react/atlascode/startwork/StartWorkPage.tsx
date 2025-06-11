@@ -146,10 +146,6 @@ const StartWorkPage: React.FunctionComponent = () => {
         }
     }, [branchType, state.issue, state.customTemplate]);
 
-    useEffect(() => {
-        buildBranchNameView();
-    }, [branchType, buildBranchNameView]);
-
     const handleRepositoryChange = useCallback(
         (event: React.ChangeEvent<{ name?: string | undefined; value: any }>) => {
             setRepository(event.target.value);
@@ -258,11 +254,19 @@ const StartWorkPage: React.FunctionComponent = () => {
     }, [controller]);
 
     useEffect(() => {
+        console.log(`JS-1324 selected repo ${repository.workspaceRepo.rootUri}`);
         if (repository.workspaceRepo.rootUri === '' && state.repoData.length > 0) {
             setRepository(state.repoData?.[0]);
-            buildBranchNameView();
+            // Only build branch name if we have both branchType and issue
+            if (branchType && state.issue) {
+                buildBranchNameView();
+            }
         }
-    }, [repository, buildBranchNameView, state.repoData]);
+    }, [repository, branchType, setRepository, state.repoData, state.issue, state.customTemplate, buildBranchNameView]);
+
+    useEffect(() => {
+        console.log(`JS-1324 repos: ${JSON.stringify(state.repoData.map((r) => r.workspaceRepo.rootUri))}`);
+    }, [state.repoData]);
 
     useEffect(() => {
         const newBranchType = repository.branchTypes?.[0] || emptyPrefix;
