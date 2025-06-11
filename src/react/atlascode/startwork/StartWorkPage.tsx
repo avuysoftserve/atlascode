@@ -136,6 +136,7 @@ const StartWorkPage: React.FunctionComponent = () => {
         const view = buildBranchName({
             branchType,
             issue: state.issue,
+            userEmail: repository.userEmail,
         });
 
         try {
@@ -144,7 +145,7 @@ const StartWorkPage: React.FunctionComponent = () => {
         } catch {
             setLocalBranch('Invalid template: please follow the format described above');
         }
-    }, [branchType, state.issue, state.customTemplate]);
+    }, [branchType, state.issue, state.customTemplate, repository.userEmail]);
 
     const handleRepositoryChange = useCallback(
         (event: React.ChangeEvent<{ name?: string | undefined; value: any }>) => {

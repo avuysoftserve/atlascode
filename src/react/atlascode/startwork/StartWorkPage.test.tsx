@@ -1,5 +1,21 @@
 import { buildBranchName } from './branchNameUtils';
 
+const mockRepoData = {
+    workspaceRepo: {
+        rootUri: 'test-uri',
+        mainSiteRemote: {
+            remote: {
+                name: 'origin',
+            },
+        },
+        siteRemotes: [],
+    },
+    localBranches: [],
+    remoteBranches: [],
+    branchTypes: [],
+    developmentBranch: 'main',
+};
+
 describe('buildBranchName', () => {
     it('should normalize and format branch name parts correctly', () => {
         const input = {
@@ -42,5 +58,44 @@ describe('buildBranchName', () => {
         };
         const view = buildBranchName(input);
         expect(view.summary).toBe('more-dashes-are-here-multiple-dashes');
+    });
+
+    it('should build branch name with username when userEmail is available', () => {
+        const mockRepo = {
+            ...mockRepoData,
+            userEmail: 'user.name@example.com',
+        };
+        const mockBranchType = { kind: 'feature', prefix: 'feature' };
+        const mockIssue = {
+            key: 'TEST-123',
+            summary: 'Test Issue',
+        };
+
+        const view = buildBranchName({
+            branchType: mockBranchType,
+            issue: mockIssue,
+            userEmail: mockRepo.userEmail,
+        });
+
+        expect(view.username).toBe('user.name');
+        expect(view.UserName).toBe('user.name');
+        expect(view.USERNAME).toBe('USER.NAME');
+    });
+
+    it('should use default username when userEmail is not available', () => {
+        const mockBranchType = { kind: 'feature', prefix: 'feature' };
+        const mockIssue = {
+            key: 'TEST-123',
+            summary: 'Test Issue',
+        };
+
+        const view = buildBranchName({
+            branchType: mockBranchType,
+            issue: mockIssue,
+        });
+
+        expect(view.username).toBe('username');
+        expect(view.UserName).toBe('username');
+        expect(view.USERNAME).toBe('USERNAME');
     });
 });
